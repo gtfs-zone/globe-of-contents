@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>list.gtfs.zone - Every public GTFS feed</title>
+    <meta name="description" content="A list and a world map of every public GTFS and GTFS Realtime feed in Transitland and the Mobility Database, checked daily for whether it still answers." />
+    <link rel="canonical" href="https://list.gtfs.zone/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="gtfs.zone" />
+    <meta property="og:url" content="https://list.gtfs.zone/" />
+    <meta property="og:title" content="list.gtfs.zone - Every public GTFS feed" />
+    <meta property="og:description" content="A list and a world map of every public GTFS and GTFS Realtime feed in Transitland and the Mobility Database, checked daily for whether it still answers." />
+    <meta property="og:image" content="https://list.gtfs.zone/logo.svg" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" type="image/svg+xml" href="logo.svg" />
+    <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" />
+    <link rel="stylesheet" href="./styles/main.css" />
+  </head>
+
+  <body class="font-sans h-screen overflow-hidden">
+    <div class="app-container h-screen grid grid-rows-[auto_1fr]">
+
+      <!-- Navbar -->
+      <div class="navbar bg-base-100 col-span-2 border-b border-base-300 z-50">
+        <div class="navbar-start">
+          <a href="https://gtfs.zone" class="flex items-center gap-4" target="_blank" rel="noopener noreferrer">
+            <div class="avatar">
+              <div class="w-8 rounded-lg">
+                <img src="logo.svg" alt="list.gtfs.zone logo" />
+              </div>
+            </div>
+            <h1 class="text-xl font-bold hidden md:block">
+              <span class="text-primary">list</span>.gtfs.zone<sup
+                id="app-version"
+                class="text-xs opacity-50 font-normal ml-1"
+              ></sup>
+            </h1>
+          </a>
+        </div>
+
+        <div class="navbar-end">
+          <div class="flex items-center gap-2">
+            <span id="generated-at" class="text-xs opacity-60 hidden sm:inline"></span>
+            <!-- Filled by renderNavbarActions from src/modules/navbar-action-list.ts -->
+            <div id="navbar-actions" class="flex items-center gap-2"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map Area -->
+      <div class="map-area relative bg-base-300 min-h-0">
+        <div id="map" class="w-full h-full"></div>
+
+        <div
+          id="map-controls"
+          class="absolute top-2 left-2 right-2 z-40 flex flex-row items-start gap-2 pointer-events-none"
+        >
+          <!-- Always visible: most sources have no coordinates, and the map
+               must not read as the whole catalogue. -->
+          <div
+            id="unplaced-card"
+            class="card card-bordered bg-base-100 shadow-lg px-3 py-2 text-sm pointer-events-auto max-w-sm hidden"
+          ></div>
+          <div class="flex-1"></div>
+          <!-- Filled by renderAutoZoomControl. The wrapper carries
+               pointer-events-auto because #map-controls is pointer-events-none. -->
+          <div id="auto-zoom-mount" class="pointer-events-auto flex-shrink-0"></div>
+        </div>
+      </div>
+
+      <!-- Right Panel -->
+      <div
+        id="right-panel"
+        class="relative bg-base-200 border-l border-base-300 flex flex-col overflow-hidden min-h-0"
+      >
+        <div class="p-3 border-b border-base-300 bg-base-100 flex flex-col gap-2">
+          <div id="summary" class="stats stats-horizontal bg-base-200 w-full text-center"></div>
+
+          <input
+            type="search"
+            id="filter-q"
+            placeholder="Search by name, operator, place or feed id"
+            class="input input-sm w-full"
+            autocomplete="off"
+          />
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <select id="filter-catalog" class="select select-sm" aria-label="Catalog"></select>
+            <select id="filter-state" class="select select-sm" aria-label="Status"></select>
+            <select id="filter-kind" class="select select-sm" aria-label="Kind"></select>
+            <select id="filter-country" class="select select-sm" aria-label="Country"></select>
+          </div>
+          <div id="list-count" class="text-xs"></div>
+        </div>
+
+        <div id="source-list" class="flex-1 overflow-y-auto bg-base-100">
+          <p class="text-base-content/50 text-sm text-center py-8">Loading the catalogue</p>
+        </div>
+      </div>
+    </div><!-- end grid -->
+
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>

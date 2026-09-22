@@ -1,0 +1,57 @@
+@import 'tailwindcss';
+@source "../**/*.{html,js,ts}";
+@source "../../node_modules/interlocking/src/**/*.ts";
+
+@plugin "daisyui" {
+  themes:
+    light --default,
+    dark --prefersdark;
+}
+
+html,
+body {
+  overscroll-behavior: none;
+  overflow: hidden;
+}
+
+.app-container {
+  grid-template-columns: 1fr 520px;
+}
+
+/* Phone: the map on top, the list below it, both scrolling independently. */
+@media (max-width: 767px) {
+  .app-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 40vh 1fr;
+  }
+
+  #right-panel {
+    border-left: none;
+    border-top: 1px solid var(--color-base-300);
+  }
+}
+
+/* Cluster markers: a ring split by state share, with the count on a disc. */
+.cluster-marker {
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+  padding: 0;
+  border: none;
+}
+
+.cluster-marker > span {
+  width: 70%;
+  height: 70%;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #111111;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

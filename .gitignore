@@ -1,0 +1,9 @@
+.env
+.envrc
+*.log
+.DS_Store
+node_modules/
+dist/
+
+# Working plans are local scratch, not repo history.
+CURRENT_PLAN.md

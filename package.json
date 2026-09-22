@@ -1,0 +1,36 @@
+{
+  "name": "list.gtfs.zone",
+  "version": "0.0.0",
+  "description": "A list and a world map of every public GTFS feed, and whether it answers",
+  "main": "src/index.html",
+  "type": "module",
+  "packageManager": "pnpm@11.20.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "gtfs",
+    "transit",
+    "catalog",
+    "map"
+  ],
+  "author": "gtfs.zone contributors",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "@types/geojson": "^7946.0.16",
+    "@types/node": "^24.12.2",
+    "autoprefixer": "^10.5.0",
+    "tailwindcss": "^4.2.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.2"
+  },
+  "dependencies": {
+    "@leeoniya/ufuzzy": "^1.0.14",
+    "@tailwindcss/postcss": "^4.2.4",
+    "daisyui": "^5.5.19",
+    "interlocking": "git+https://git.kcfam.us/gtfs.zone/interlocking.git#v2.4.0",
+    "maplibre-gl": "^5.7.2"
+  }
+}
