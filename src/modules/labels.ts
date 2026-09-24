@@ -75,10 +75,9 @@ export function statusLine(row: SourceRow, state: State, entry: StatusEntry | un
   if (entry?.code) {
     parts.push(`HTTP ${entry.code}`);
   }
-  // `since` on a down row is when it went down, which makes the day before it
-  // the last one it was seen answering.
+  // `since` on a down row is when it went down; it has not answered since then.
   if (entry?.since) {
-    parts.push(`last good before ${formatDate(entry.since)}`);
+    parts.push(`never reached since ${formatDate(entry.since)}`);
   }
   return parts.join(', ');
 }
