@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+/* The shell layout: grid, drawer, map controls */
+@import '../../node_modules/interlocking/src/ui/app-shell.css';
 @source "../**/*.{html,js,ts}";
 @source "../../node_modules/interlocking/src/**/*.ts";
 
@@ -8,26 +10,17 @@
     dark --prefersdark;
 }
 
-html,
-body {
-  overscroll-behavior: none;
-  overflow: hidden;
-}
-
-.app-container {
-  grid-template-columns: 1fr 520px;
-}
-
-/* Phone: the map on top, the list below it, both scrolling independently. */
+/* Phone: the unplaced count wraps onto its own line under the search card
+   rather than squeezing it. */
 @media (max-width: 767px) {
-  .app-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 40vh 1fr;
+  #map-controls {
+    flex-wrap: wrap;
   }
 
-  #right-panel {
-    border-left: none;
-    border-top: 1px solid var(--color-base-300);
+  #unplaced-slot {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    margin-left: 0;
   }
 }
 

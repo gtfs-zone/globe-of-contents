@@ -1,9 +1,9 @@
 /**
- * Display names and the one-line status text, shared by the list, the filters
- * and the detail modal so the same row never reads two different ways.
+ * Display names and the one-line status text, shared by the pages, the map
+ * and the search box so the same feed never reads two different ways.
  */
 
-import type { SourceRow, State, StatusEntry } from '../data/artifacts';
+import type { Feed, Place, Role, SourceRow, State, StatusEntry } from '../data/artifacts';
 
 export const CATALOG_LABELS: Record<string, string> = {
   transitland: 'Transitland',
@@ -11,15 +11,16 @@ export const CATALOG_LABELS: Record<string, string> = {
   curated: 'Curated',
 };
 
-export const CATALOG_SHORT: Record<string, string> = {
-  transitland: 'TL',
-  mobilitydatabase: 'MDB',
-  curated: 'Curated',
-};
-
 export const KIND_LABELS: Record<string, string> = {
   static: 'Schedule',
   rt: 'Realtime',
+};
+
+export const ROLE_LABELS: Record<Role, string> = {
+  scheduled: 'Schedule',
+  vehicles: 'Vehicle positions',
+  trip_updates: 'Trip updates',
+  alerts: 'Service alerts',
 };
 
 export const STATE_LABELS: Record<State, string> = {
@@ -57,6 +58,20 @@ export function formatCount(n: number): string {
   return n.toLocaleString();
 }
 
+export function formatBytes(n: number): string {
+  if (n < 1024) {
+    return `${n} B`;
+  }
+  const units = ['KB', 'MB', 'GB'];
+  let value = n / 1024;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toFixed(value < 10 ? 1 : 0)} ${units[unit]}`;
+}
+
 /** Why a row reads the way it does, in a few words. */
 export function statusLine(row: SourceRow, state: State, entry: StatusEntry | undefined): string {
   if (state === 'unknown') {
@@ -82,8 +97,19 @@ export function statusLine(row: SourceRow, state: State, entry: StatusEntry | un
   return parts.join(', ');
 }
 
-export function placeLine(row: SourceRow): string {
-  return [row.municipality, row.subdivision, row.country || row.country_code]
+/** A feed's state in a few words: when it went down, or why it is unchecked. */
+export function feedStatusLine(feed: Feed): string {
+  if (feed.state === 'down') {
+    return feed.since ? `never reached since ${formatDate(feed.since)}` : 'not answering';
+  }
+  if (feed.state === 'unknown') {
+    return feed.auth?.length ? 'needs an API key' : 'not checked yet';
+  }
+  return '';
+}
+
+export function placeLine(place: Place): string {
+  return [place.municipality, place.subdivision, place.country || place.country_code]
     .filter(Boolean)
     .join(', ');
 }

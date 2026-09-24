@@ -1,14 +1,14 @@
 /**
- * The world map: every placed source in the current filter, clustered, and
- * coloured by whether it answered.
+ * The world map: every placed logical feed in the current filter, clustered,
+ * and coloured by whether it answered.
  *
  * Clusters are HTML markers rather than a symbol layer, because none of the
  * shared raster basemaps carries a glyphs URL and so a map layer cannot draw a
  * count. Each marker's ring is split by the cluster's up/down/unchecked share,
  * which is the zoomed-out view of the whole world's reachability.
  *
- * Unplaced sources are not drawn at all. The caller shows their count beside
- * the map, since most of the corpus has no coordinates and a map that quietly
+ * Unplaced feeds are not drawn at all. The caller shows their count beside
+ * the map, since much of the corpus has no coordinates and a map that quietly
  * dropped them would mislead.
  */
 
@@ -18,6 +18,7 @@ import type {
   LngLatBoundsLike,
   Map as MapLibreMap,
   MapLayerMouseEvent,
+  MapMouseEvent,
 } from 'maplibre-gl';
 import type { Feature, FeatureCollection, Point, Polygon } from 'geojson';
 import { AutoZoom } from 'interlocking/map/auto-zoom';
@@ -26,8 +27,7 @@ import type { MapAppearance } from 'interlocking/map/basemap-control';
 import { clearThemeColorCache, resolveThemeColor } from 'interlocking/util/theme-color';
 import { escapeHtml } from 'interlocking/util/escape-html';
 import { CONFIG } from '../config';
-import type { SourceRow, State, StatusEntry } from '../data/artifacts';
-import { stateOf } from '../data/artifacts';
+import type { Feed, Place, State } from '../data/artifacts';
 import { STATE_LABELS } from './labels';
 import { readStored, writeStored } from './storage';
 
@@ -42,8 +42,8 @@ interface PointProps {
   state: State;
 }
 
-const SOURCE_ID = 'sources';
-const POINT_LAYER = 'source-points';
+const SOURCE_ID = 'feeds';
+const POINT_LAYER = 'feed-points';
 const SELECTED_SOURCE = 'selected';
 const SELECTED_FILL = 'selected-bbox-fill';
 const SELECTED_LINE = 'selected-bbox-line';
@@ -73,7 +73,7 @@ export class GlobeMap {
   private map: MapLibreMap;
   private autoZoom: AutoZoom;
   private data: FeatureCollection<Point, PointProps> = EMPTY;
-  private selected: SourceRow | null = null;
+  private selected: Place | null = null;
   private colors: Record<State, string> = { ...CONFIG.STATE_COLOR_FALLBACK };
   // Cluster ids are only stable for one setData, so both maps are cleared
   // whenever the data changes.
@@ -82,7 +82,10 @@ export class GlobeMap {
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private hover: maplibregl.Popup;
 
-  constructor(container: string, onSelect: (rowId: string) => void) {
+  /** Fired by a click on the map that hits no feed. */
+  onEmptyClick: (() => void) | null = null;
+
+  constructor(container: string, onSelect: (feedId: string) => void) {
     const view = restoreView();
     const appearance = readStored<MapAppearance>(CONFIG.MAP_APPEARANCE_KEY) ?? {};
 
@@ -109,10 +112,15 @@ export class GlobeMap {
     this.map.on('render', () => this.updateClusterMarkers());
     this.map.on('moveend', () => this.queueViewSave());
 
-    this.map.on('click', POINT_LAYER, (e: MapLayerMouseEvent) => {
-      const id = e.features?.[0]?.properties?.id;
+    this.map.on('click', (e: MapMouseEvent) => {
+      const hit = this.map.getLayer(POINT_LAYER)
+        ? this.map.queryRenderedFeatures(e.point, { layers: [POINT_LAYER] })[0]
+        : undefined;
+      const id = hit?.properties?.id;
       if (typeof id === 'string') {
         onSelect(id);
+      } else {
+        this.onEmptyClick?.();
       }
     });
     this.map.on('mousemove', POINT_LAYER, (e: MapLayerMouseEvent) => {
@@ -140,17 +148,17 @@ export class GlobeMap {
     return this.autoZoom;
   }
 
-  /** Replace what is drawn with the placed rows among `rows`. */
-  setRows(rows: SourceRow[], status: Record<string, StatusEntry>): void {
+  /** Replace what is drawn with the placed feeds among `feeds`. */
+  setFeeds(feeds: Feed[]): void {
     const features: Feature<Point, PointProps>[] = [];
-    for (const row of rows) {
-      if (row.lat === undefined || row.lon === undefined) {
+    for (const feed of feeds) {
+      if (feed.lat === undefined || feed.lon === undefined) {
         continue;
       }
       features.push({
         type: 'Feature',
-        geometry: { type: 'Point', coordinates: [row.lon, row.lat] },
-        properties: { id: row.rowId, name: row.name || row.feedId, state: stateOf(row, status) },
+        geometry: { type: 'Point', coordinates: [feed.lon, feed.lat] },
+        properties: { id: feed.feedId, name: feed.name || feed.feedId, state: feed.state },
       });
     }
     this.data = { type: 'FeatureCollection', features };
@@ -158,11 +166,30 @@ export class GlobeMap {
     (this.map.getSource(SOURCE_ID) as GeoJSONSource | undefined)?.setData(this.data);
   }
 
-  /** Highlight a row, and move the camera to it if auto-zoom allows. */
-  select(row: SourceRow | null): void {
-    this.selected = row;
+  /** Highlight a place, and move the camera to it if auto-zoom allows. */
+  select(place: Place | null): void {
+    this.selected = place;
     this.paintSelected();
     this.focusSelected();
+  }
+
+  /**
+   * Keep the camera's focus clear of the mobile sheet, which covers the
+   * bottom `covered` pixels of the map.
+   */
+  setBottomPadding(covered: number): void {
+    this.map.setPadding({ top: 0, left: 0, right: 0, bottom: covered });
+  }
+
+  /** A cheap resize, while the sidebar is being dragged. */
+  resizeNow(): void {
+    this.map.resize();
+  }
+
+  /** The resize once the sidebar is released. */
+  forceMapResize(): void {
+    this.map.resize();
+    this.map.triggerRepaint();
   }
 
   onThemeChange(): void {
@@ -255,10 +282,10 @@ export class GlobeMap {
   }
 
   private selectedData(): FeatureCollection {
-    const row = this.selected;
+    const place = this.selected;
     const features: Feature[] = [];
-    if (row?.bbox) {
-      const [minLat, minLon, maxLat, maxLon] = row.bbox;
+    if (place?.bbox) {
+      const [minLat, minLon, maxLat, maxLon] = place.bbox;
       const ring = [
         [minLon, minLat],
         [maxLon, minLat],
@@ -272,10 +299,10 @@ export class GlobeMap {
         properties: {},
       });
     }
-    if (row?.lat !== undefined && row.lon !== undefined) {
+    if (place?.lat !== undefined && place.lon !== undefined) {
       features.push({
         type: 'Feature',
-        geometry: { type: 'Point', coordinates: [row.lon, row.lat] },
+        geometry: { type: 'Point', coordinates: [place.lon, place.lat] },
         properties: {},
       });
     }
@@ -287,29 +314,29 @@ export class GlobeMap {
   }
 
   private focusSelected(): void {
-    const row = this.selected;
-    if (!row || row.lat === undefined || row.lon === undefined) {
+    const place = this.selected;
+    if (!place || place.lat === undefined || place.lon === undefined) {
       return;
     }
     // A box crossing the antimeridian has min_lon > max_lon; flying to the
     // centroid is better than a fit that spans the rest of the world.
-    if (row.bbox && row.bbox[1] <= row.bbox[3]) {
-      const [minLat, minLon, maxLat, maxLon] = row.bbox;
+    if (place.bbox && place.bbox[1] <= place.bbox[3]) {
+      const [minLat, minLon, maxLat, maxLon] = place.bbox;
       const bounds: LngLatBoundsLike = [
         [minLon, minLat],
         [maxLon, maxLat],
       ];
       this.autoZoom.fitBounds(this.map, new maplibregl.LngLatBounds(bounds), {
         padding: 60,
-        maxZoom: CONFIG.SOURCE_FOCUS_ZOOM + 3,
+        maxZoom: CONFIG.FEED_FOCUS_ZOOM + 3,
         duration: CONFIG.FOCUS_DURATION,
         essential: true,
       });
       return;
     }
     this.autoZoom.flyTo(this.map, {
-      center: [row.lon, row.lat],
-      zoom: Math.max(this.map.getZoom(), CONFIG.SOURCE_FOCUS_ZOOM),
+      center: [place.lon, place.lat],
+      zoom: Math.max(this.map.getZoom(), CONFIG.FEED_FOCUS_ZOOM),
       duration: CONFIG.FOCUS_DURATION,
       essential: true,
     });
@@ -340,7 +367,7 @@ export class GlobeMap {
       `conic-gradient(${this.colors.up} 0deg ${upEnd}deg, ` +
       `${this.colors.down} ${upEnd}deg ${downEnd}deg, ` +
       `${this.colors.unknown} ${downEnd}deg 360deg)`;
-    el.title = `${total} sources: ${up} up, ${down} down, ${total - up - down} not checked`;
+    el.title = `${total} feeds: ${up} up, ${down} down, ${total - up - down} not checked`;
     el.innerHTML = `<span>${abbreviate(total)}</span>`;
     el.addEventListener('click', (event) => {
       event.stopPropagation();

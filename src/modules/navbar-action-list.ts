@@ -1,19 +1,19 @@
-import { renderMoonIcon, renderNavIcon, renderSunIcon } from 'interlocking/ui/nav-icons';
+import { renderMoonIcon, renderNavIcon, renderSunIcon, type NavIconName } from 'interlocking/ui/nav-icons';
 import type { NavbarAction } from 'interlocking/ui/navbar-actions';
 import { CONFIG } from '../config';
 
 /**
- * This app's navbar action row. Element ids are the contract with the click
- * wiring in `src/index.ts`.
+ * This app's navbar action row and dock artwork. Element ids are the contract
+ * with the click wiring in `src/index.ts`.
  */
 export const NAVBAR_ACTIONS: NavbarAction[] = [
   {
     // The raw artifacts, for anyone who would rather have the JSON.
     kind: 'link',
     id: 'data-link',
-    label: 'Raw data (sources.json)',
+    label: 'Raw data (feeds.json)',
     icon: renderNavIcon('feedData'),
-    href: `${CONFIG.DATA_BASE}/sources.json`,
+    href: `${CONFIG.DATA_BASE}/feeds.json`,
     external: true,
   },
   {
@@ -25,4 +25,16 @@ export const NAVBAR_ACTIONS: NavbarAction[] = [
     inputClass: 'theme-controller',
     value: 'light',
   },
+  {
+    kind: 'icon',
+    id: 'help-btn',
+    label: 'Guide',
+    icon: renderNavIcon('guide'),
+  },
+];
+
+/** Icons the mobile dock shares with the navbar, by element id. */
+export const DOCK_ICONS: [string, NavIconName][] = [
+  ['dock-browse', 'browse'],
+  ['dock-guide', 'guide'],
 ];

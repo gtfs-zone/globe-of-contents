@@ -16,8 +16,11 @@ export const CONFIG = Object.freeze({
   // thousands; the count above the list says how many are hidden.
   DISPLAY_CAP: 200,
 
-  // Debounce for the list's text filter, which also rebuilds the map source.
+  // Debounce for the search box's live filter of the list and the map.
   FILTER_DEBOUNCE_MS: 150,
+
+  // Entries in the search box's dropdown.
+  SEARCH_LIMIT: 20,
 
   // Map clustering. Radius in pixels; above CLUSTER_MAX_ZOOM every placed feed
   // draws on its own.
@@ -29,7 +32,7 @@ export const CONFIG = Object.freeze({
   DEFAULT_ZOOM: 1.4,
 
   // Zoom used when focusing a feed with a point but no bounding box.
-  SOURCE_FOCUS_ZOOM: 9,
+  FEED_FOCUS_ZOOM: 9,
   FOCUS_DURATION: 1500,
 
   // Map colours per reachability state, used when a theme token cannot be
@@ -49,7 +52,7 @@ export const CONFIG = Object.freeze({
   FILTERS_KEY: 'gc.filters',
   MAP_VIEW_SAVE_DEBOUNCE: 400,
 
-  // Sibling apps a row can be opened in. Hardcoded to prod on purpose, as in
+  // Sibling apps a feed can be opened in. Hardcoded to prod on purpose, as in
   // test-track: a shared link should always land on the stable public app.
   EDITOR_BASE: 'https://edit.gtfs.zone',
   VIEWER_BASE: 'https://viz.rt.gtfs.zone',
