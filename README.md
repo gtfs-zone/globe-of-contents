@@ -6,8 +6,8 @@ each one still answers. Deployed at `list.gtfs.zone`.
 A static Vite/TypeScript/daisyUI app with no backend of its own. Everything it
 shows comes from the artifacts
 [geometry-car](https://git.kcfam.us/gtfs.zone/geometry-car) publishes daily to
-`data.gtfs.zone`: `manifest.json` first, then `sources.json`, `status.json` and
-`summary.json` at the hashes the manifest names.
+`data.gtfs.zone`: `manifest.json` first, then `feeds.json`, `sources.json`,
+`status.json` and `summary.json` at the hashes the manifest names.
 
 ```bash
 pnpm install
@@ -23,17 +23,24 @@ artifacts. Production always reads `https://data.gtfs.zone`.
 
 ## What it shows
 
-- **The list:** every source row, one per catalog and kind (a feed with a
-  schedule and a realtime endpoint is two rows). Search plus filters for
-  catalog, status, kind and country, all mirrored into the URL hash so a
-  filtered view is a link. At most 200 rows are painted; the count says how many
-  more match.
-- **The map:** the placed rows among the current filter, clustered, each cluster
-  ringed by its up/down/unchecked share. Most rows have no coordinates (DMFR
-  carries none; only the Mobility Database does), and the map says how many it
-  is not drawing.
-- **A row:** every URL, the last check's result, when it last changed state,
-  and the rows in other catalogs pointing at the same endpoint.
+- **The map:** one point per logical feed (a transit system, bundling its
+  schedule and realtime across every catalog that lists it), clustered, each
+  cluster ringed by its up/down/unchecked share. Many feeds have no coordinates
+  (DMFR carries none; only the Mobility Database does), and the map always says
+  how many it is not drawing.
+- **Search:** the box on the map narrows the list and the map as you type and
+  offers the best matches in a dropdown. Status chips and a "has realtime"
+  toggle sit under it. All of it is mirrored into the URL hash, so a filtered
+  view is a link.
+- **The sidebar,** hash-routed with breadcrumbs:
+  - Home: the filtered feeds. At most 200 are painted; the count says how many
+    more match.
+  - Feed: each role's state and URLs, the schedule's size and Last-Modified,
+    the catalog entries it was built from, and links into the editor and the
+    visualizer.
+  - Source: one catalog entry, its URLs and its last check.
+- **Phone:** the sidebar becomes a bottom drawer, opened from the dock's Browse
+  button.
 
 ## Releasing
 

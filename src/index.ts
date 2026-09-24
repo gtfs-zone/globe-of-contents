@@ -1,246 +1,259 @@
+// Mounts the shell markup; must stay the first import.
+import './shell';
 import { renderAutoZoomControl, syncAutoZoomControl, wireAutoZoomControl } from 'interlocking/map/auto-zoom';
-import { renderNavbarActions } from 'interlocking/ui/navbar-actions';
+import { BottomSheetController } from 'interlocking/ui/bottom-sheet';
+import { pageTitle } from 'interlocking/ui/breadcrumb-trail';
+import { installGuideButtons, setHelpPages, showHelpModal } from 'interlocking/ui/help-modal';
+import { renderDockIcons, renderNavbarActions } from 'interlocking/ui/navbar-actions';
 import { notify } from 'interlocking/ui/notification-system';
+import { PanelHost } from 'interlocking/ui/panel-host';
+import { PanelResizer, restorePanelWidth } from 'interlocking/ui/panel-resizer';
 import { feedProgressIndicator } from 'interlocking/ui/progress-indicator';
+import { SearchController } from 'interlocking/ui/search-controller';
 import { ThemeController } from 'interlocking/ui/theme-controller';
 import { escapeHtml } from 'interlocking/util/escape-html';
 import { CONFIG } from './config';
-import type { Catalogue, SourceRow } from './data/artifacts';
-import { loadCatalogue } from './data/artifacts';
-import { EMPTY_FILTERS, RowFilter, readHash, writeHash } from './modules/filters';
-import type { Filters, HashState } from './modules/filters';
-import { CATALOG_LABELS, KIND_LABELS, STATE_LABELS, formatCount, formatDate } from './modules/labels';
-import { ListView } from './modules/list-view';
+import type { Catalogue, Feed, State } from './data/artifacts';
+import { CatalogueIndex, STATES, loadCatalogue } from './data/artifacts';
+import { AppState } from './modules/app-state';
+import type { Filters } from './modules/filters';
+import { FeedFilter, buildHaystack, filterParams, readFilters, saveFilters, sameFilters } from './modules/filters';
+import { HELP_GROUP_ORDER, HELP_PAGES, setHelpVersion } from './modules/help-pages';
+import { formatBytes, formatCount, formatDate } from './modules/labels';
 import { GlobeMap } from './modules/map-view';
-import { NAVBAR_ACTIONS } from './modules/navbar-action-list';
-import { showSourceDetail } from './modules/source-detail';
+import { DOCK_ICONS, NAVBAR_ACTIONS } from './modules/navbar-action-list';
+import { placeFor, renderPage, validateState } from './modules/pages';
+import { SearchEntries } from './modules/search-entries';
+import type { PageState } from './types/page-state';
 
 // ─── Shell ────────────────────────────────────────────────────────────────────
 
 // The render replaces the container's contents, so every navbar listener binds
 // after this call.
 renderNavbarActions(document.getElementById('navbar-actions')!, NAVBAR_ACTIONS);
+renderDockIcons(DOCK_ICONS);
 document.getElementById('app-version')!.textContent = `v${__APP_VERSION__}`;
+
+const appContainer = document.querySelector<HTMLElement>('.app-container')!;
+restorePanelWidth(appContainer);
 
 notify.initialize();
 const themeController = new ThemeController();
 themeController.initialize();
 
-const map = new GlobeMap('map', (rowId) => openSource(rowId));
+setHelpVersion(__APP_VERSION__);
+setHelpPages(HELP_PAGES, HELP_GROUP_ORDER);
+document.getElementById('help-btn')!.addEventListener('click', () => void showHelpModal());
+
+const map = new GlobeMap('map', (feedId) => appState.setFocus({ type: 'feed', feed: feedId }));
+map.onEmptyClick = () => appState.clearFocus();
 themeController.onThemeChange(() => map.onThemeChange());
+new PanelResizer(appContainer, map);
 
 document.getElementById('auto-zoom-mount')!.innerHTML = renderAutoZoomControl();
 syncAutoZoomControl(map.getAutoZoom().isEnabled());
 wireAutoZoomControl(map.getAutoZoom());
 
-const listEl = document.getElementById('source-list')!;
-const list = new ListView(listEl, document.getElementById('list-count')!, (rowId) => openSource(rowId));
-
-const inputs = {
-  q: document.getElementById('filter-q') as HTMLInputElement,
-  catalog: document.getElementById('filter-catalog') as HTMLSelectElement,
-  state: document.getElementById('filter-state') as HTMLSelectElement,
-  kind: document.getElementById('filter-kind') as HTMLSelectElement,
-  country: document.getElementById('filter-country') as HTMLSelectElement,
-};
+// Browse snaps the sheet open over the map; Guide opens its modal and leaves
+// the sheet where it is.
+const bottomSheet = new BottomSheetController(document.getElementById('right-panel')!, [
+  { id: 'dock-browse' },
+  { id: 'dock-guide', snap: null, onSelect: () => void showHelpModal() },
+]);
+// On a phone the sheet covers the bottom of the map, so the camera holds the
+// focused feed above it.
+bottomSheet.onSnapChange((covered) => map.setBottomPadding(covered));
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
-let catalogue: Catalogue | null = null;
-let rowFilter: RowFilter | null = null;
-let byId = new Map<string, SourceRow>();
-let current: HashState = readHash();
-// The row whose modal is open, so a hash write of the same row does not stack
-// a second copy of it.
-let openRowId: string | null = null;
+let index: CatalogueIndex | null = null;
+let feedFilter: FeedFilter | null = null;
+let searchEntries: SearchEntries | null = null;
+let filters: Filters = readFilters(window.location.hash.slice(1), true);
+let filtered: Feed[] = [];
 
-function refresh(): void {
-  if (!catalogue || !rowFilter) {
-    return;
-  }
-  const rows = rowFilter.apply(current.filters);
-  list.render(rows, current.source);
-  map.setRows(rows, catalogue.status);
-  renderUnplaced(rows);
-}
-
-function renderUnplaced(rows: SourceRow[]): void {
-  const card = document.getElementById('unplaced-card')!;
-  const unplaced = rows.reduce((n, row) => (row.lat === undefined ? n + 1 : n), 0);
-  card.classList.toggle('hidden', rows.length === 0);
-  card.innerHTML =
-    `<span class="font-semibold">${formatCount(rows.length - unplaced)}</span> on the map, ` +
-    `<span class="font-semibold">${formatCount(unplaced)}</span> with no coordinates ` +
-    '<span class="opacity-60">(list only)</span>';
-}
-
-function setFilters(next: Partial<Filters>): void {
-  current = { ...current, filters: { ...current.filters, ...next } };
-  writeHash(current);
-  refresh();
-}
-
-function openSource(rowId: string): void {
-  if (!catalogue || openRowId === rowId) {
-    return;
-  }
-  const row = byId.get(rowId);
-  if (!row) {
-    notify.warning(`No source ${rowId} in this catalogue`);
-    return;
-  }
-  current = { ...current, source: rowId };
-  writeHash(current);
-  map.select(row);
-  refresh();
-
-  openRowId = rowId;
-  void showSourceDetail(row, catalogue.status, byId, (next) => openSource(next)).then(() => {
-    // A cross-link closes this modal and opens another; only clear the
-    // selection if nothing replaced it in between.
-    if (openRowId === rowId) {
-      openRowId = null;
+const panelContent = document.getElementById('panel-content')!;
+const panel = new PanelHost<PageState>(panelContent, {
+  navigate: (state) => appState.setFocus(state),
+  href: (state) => appState.hrefFor(state),
+  renderPage: (state) =>
+    index ? renderPage({ index, filtered, filters, href: (s) => appState.hrefFor(s) }, state) : '',
+  action: (action, arg) => {
+    if (action === 'guide') {
+      void showHelpModal(arg || undefined);
+    } else if (action === 'status') {
+      setFilters({ status: arg ? [arg as State] : [] });
     }
-    if (current.source === rowId) {
-      current = { ...current, source: null };
-      writeHash(current);
-      map.select(null);
-      refresh();
+  },
+});
+panel.initialize();
+
+const DEFAULT_TITLE = document.title;
+
+const appState = new AppState({
+  onStateChange: () => {},
+  onFocusChange: (state) => {
+    if (!index) {
+      return;
     }
-  });
-}
+    document.title = state.type === 'home' ? DEFAULT_TITLE : pageTitle(appState.breadcrumbs, 'list.gtfs.zone');
+    panel.show(state, appState.breadcrumbs);
+    if (state.type !== 'home') {
+      bottomSheet.open('half');
+    }
+    // After the sheet moves, so the camera knows how much of the map is covered.
+    map.select(placeFor(index, state));
+  },
+});
+appState.pages.setFeedParams(filterParams(filters), false);
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
 
-function options(all: string, entries: [string, string, number][]): string {
-  return (
-    `<option value="">${all}</option>` +
-    entries
-      .map(
-        ([value, label, count]) =>
-          `<option value="${escapeHtml(value)}">${escapeHtml(label)} (${formatCount(count)})</option>`
-      )
-      .join('')
-  );
+const searchInput = document.getElementById('map-search') as HTMLInputElement;
+const rtToggle = document.getElementById('filter-rt') as HTMLInputElement;
+const chips = [...document.querySelectorAll<HTMLButtonElement>('#filter-chips [data-state]')];
+
+function syncControls(): void {
+  if (searchInput.value !== filters.q) {
+    searchInput.value = filters.q;
+  }
+  rtToggle.checked = filters.rt;
+  for (const chip of chips) {
+    const on = filters.status.includes(chip.dataset.state as State);
+    chip.classList.toggle('btn-active', on);
+    chip.setAttribute('aria-pressed', String(on));
+  }
 }
 
-function tally(rows: SourceRow[], key: (row: SourceRow) => string | undefined): Map<string, number> {
-  const counts = new Map<string, number>();
-  for (const row of rows) {
-    const value = key(row);
-    if (value) {
-      counts.set(value, (counts.get(value) ?? 0) + 1);
-    }
-  }
-  return counts;
+function renderUnplaced(feeds: Feed[]): void {
+  const card = document.getElementById('unplaced-card')!;
+  const unplaced = feeds.reduce((n, feed) => (feed.lat === undefined ? n + 1 : n), 0);
+  card.classList.remove('hidden');
+  card.innerHTML =
+    `<span class="font-semibold">${formatCount(feeds.length - unplaced)}</span> on the map, ` +
+    `<span class="font-semibold">${formatCount(unplaced)}</span> with no coordinates ` +
+    '<span class="opacity-60">(list only, <button type="button" class="link" data-open-guide="unplaced">why?</button>)</span>';
+  installGuideButtons(card);
 }
 
-function fillFilterOptions(data: Catalogue): void {
-  const { summary, sources } = data;
-  const fromSummary = (counts: Record<string, number>, labels: Record<string, string>) =>
-    Object.entries(counts).map(([value, count]): [string, string, number] => [value, labels[value] ?? value, count]);
-
-  inputs.catalog.innerHTML = options('All catalogs', fromSummary(summary.by_catalog, CATALOG_LABELS));
-  inputs.state.innerHTML = options('Any status', fromSummary(summary.by_state, STATE_LABELS));
-  inputs.kind.innerHTML = options('Schedule and realtime', fromSummary(summary.by_kind, KIND_LABELS));
-
-  const names = new Map<string, string>();
-  for (const row of sources) {
-    if (row.country_code && row.country && !names.has(row.country_code)) {
-      names.set(row.country_code, row.country);
-    }
+/** Re-run the filters over the catalogue and repaint everything they drive. */
+function applyFilters(): void {
+  if (!feedFilter) {
+    return;
   }
-  const countries = [...tally(sources, (row) => row.country_code)]
-    .map(([code, count]): [string, string, number] => [code, names.get(code) ?? code, count])
-    .sort((a, b) => a[1].localeCompare(b[1]));
-  inputs.country.innerHTML = options('All countries', countries);
+  filtered = feedFilter.apply(filters);
+  map.setFeeds(filtered);
+  renderUnplaced(filtered);
+  const focus = appState.focus;
+  if (focus.type === 'home') {
+    panel.show(focus, appState.breadcrumbs);
+  }
 }
 
-function syncInputs(filters: Filters): void {
-  for (const key of Object.keys(EMPTY_FILTERS) as (keyof Filters)[]) {
-    if (inputs[key].value !== filters[key]) {
-      inputs[key].value = filters[key];
-    }
-  }
+function setFilters(next: Partial<Filters>): void {
+  filters = { ...filters, ...next };
+  saveFilters(filters);
+  appState.setFilterParams(filterParams(filters));
+  syncControls();
+  applyFilters();
 }
 
 let filterTimer: ReturnType<typeof setTimeout> | null = null;
-inputs.q.addEventListener('input', () => {
+searchInput.addEventListener('input', () => {
   if (filterTimer !== null) {
     clearTimeout(filterTimer);
   }
   filterTimer = setTimeout(() => {
     filterTimer = null;
-    setFilters({ q: inputs.q.value });
+    setFilters({ q: searchInput.value });
   }, CONFIG.FILTER_DEBOUNCE_MS);
 });
-for (const key of ['catalog', 'state', 'kind', 'country'] as const) {
-  inputs[key].addEventListener('change', () => setFilters({ [key]: inputs[key].value }));
-}
 
-// A hand-edited or pasted hash.
+for (const chip of chips) {
+  chip.addEventListener('click', () => {
+    const state = chip.dataset.state as State;
+    const on = filters.status.includes(state);
+    setFilters({ status: STATES.filter((s) => (s === state ? !on : filters.status.includes(s))) });
+  });
+}
+rtToggle.addEventListener('change', () => setFilters({ rt: rtToggle.checked }));
+
+// Back/forward, or a pasted hash. The page half is the manager's; this picks
+// up the filter half.
 window.addEventListener('hashchange', () => {
-  current = readHash();
-  syncInputs(current.filters);
-  refresh();
-  if (current.source) {
-    openSource(current.source);
+  const next = readFilters(window.location.hash.slice(1));
+  if (sameFilters(next, filters)) {
+    return;
   }
+  filters = next;
+  appState.pages.setFeedParams(filterParams(filters), false);
+  syncControls();
+  applyFilters();
 });
 
-// ─── Summary ──────────────────────────────────────────────────────────────────
+syncControls();
 
-function renderSummary(data: Catalogue): void {
-  const { summary } = data;
-  const stat = (label: string, value: number, cls: string, state: string) => `
-    <button type="button" class="stat py-2 px-3 place-items-center" data-state="${state}">
-      <div class="stat-title text-xs">${label}</div>
-      <div class="stat-value text-lg ${cls}">${formatCount(value)}</div>
-    </button>`;
-  const el = document.getElementById('summary')!;
-  el.innerHTML =
-    stat('Sources', summary.total, '', '') +
-    stat('Up', summary.by_state.up ?? 0, 'text-success', 'up') +
-    stat('Down', summary.by_state.down ?? 0, 'text-error', 'down') +
-    stat('Not checked', summary.by_state.unknown ?? 0, 'opacity-60', 'unknown');
-  el.querySelectorAll<HTMLElement>('[data-state]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const state = button.dataset.state ?? '';
-      inputs.state.value = state;
-      setFilters({ state });
-    });
-  });
-
-  document.getElementById('generated-at')!.textContent = `Checked ${formatDate(data.generatedAt)}`;
-}
+// Picking a result is the same event as clicking the feed on the map.
+const searchController = new SearchController<string>({
+  getEntries: () => searchEntries?.build(filters) ?? [],
+  onSelect: (feedId) => appState.setFocus({ type: 'feed', feed: feedId }),
+  limit: CONFIG.SEARCH_LIMIT,
+});
+searchController.initialize();
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
+const pending = appState.pages.pendingStateFromURL();
+
 function start(data: Catalogue): void {
-  const sources = [...data.sources].sort((a, b) => (a.name || a.feedId).localeCompare(b.name || b.feedId));
-  catalogue = { ...data, sources };
-  byId = new Map(sources.map((row) => [row.rowId, row]));
-  rowFilter = new RowFilter(sources, data.status);
-  list.setStatus(data.status);
+  index = new CatalogueIndex(data);
+  const haystack = buildHaystack(index);
+  feedFilter = new FeedFilter(index, haystack);
+  searchEntries = new SearchEntries(index, haystack);
+  appState.setIndex(index);
 
-  fillFilterOptions(catalogue);
-  renderSummary(catalogue);
-  syncInputs(current.filters);
-  refresh();
+  document.getElementById('generated-at')!.textContent = `Checked ${formatDate(data.generatedAt)}`;
 
-  if (current.source) {
-    openSource(current.source);
+  filtered = feedFilter.apply(filters);
+  map.setFeeds(filtered);
+  renderUnplaced(filtered);
+
+  if (pending.type !== 'home' && !validateState(index, pending)) {
+    notify.warning(`Nothing in this catalogue matches the linked ${pending.type}`);
+    appState.adopt({ type: 'home' });
+  } else {
+    appState.adopt(pending);
   }
+  appState.replaceHash();
+}
+
+const LOAD_OP = 'catalogue';
+
+/**
+ * Drive the top bar from streamed bytes. With no comparable total, the bar
+ * goes indeterminate and the status line counts bytes alone.
+ */
+function reportProgress(received: number, total: number | null): void {
+  if (total) {
+    feedProgressIndicator.updateProgress(
+      LOAD_OP,
+      Math.min(100, (received / total) * 100),
+      `Loading the catalogue (${formatBytes(received)} of ${formatBytes(total)})`
+    );
+    return;
+  }
+  feedProgressIndicator.updateProgress(LOAD_OP, 0, `Loading the catalogue (${formatBytes(received)})`);
+  document.querySelector('#global-loading-indicator .loading-progress')?.removeAttribute('value');
 }
 
 function boot(): void {
-  feedProgressIndicator.startLoading('catalogue', 'Loading the catalogue');
-  loadCatalogue()
+  feedProgressIndicator.startLoading(LOAD_OP, 'Loading the catalogue');
+  loadCatalogue(reportProgress)
     .then(start)
     .catch((err: unknown) => {
       const message = err instanceof Error ? err.message : String(err);
       notify.error(`Could not load the catalogue: ${message}`);
-      listEl.innerHTML = `
+      panelContent.innerHTML = `
         <div class="text-center py-8 flex flex-col items-center gap-3">
           <p class="text-sm text-error">The catalogue did not load.</p>
           <p class="text-xs opacity-60 max-w-xs">${escapeHtml(message)}</p>
@@ -248,7 +261,7 @@ function boot(): void {
         </div>`;
       document.getElementById('retry-load')!.addEventListener('click', boot);
     })
-    .finally(() => feedProgressIndicator.finishLoading('catalogue'));
+    .finally(() => feedProgressIndicator.finishLoading(LOAD_OP));
 }
 
 boot();
