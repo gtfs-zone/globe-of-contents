@@ -1,6 +1,6 @@
 {
   "name": "list.gtfs.zone",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A list and a world map of every public GTFS feed, and whether it answers",
   "main": "src/index.html",
   "type": "module",
