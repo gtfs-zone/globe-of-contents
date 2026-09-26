@@ -214,6 +214,7 @@ function renderHome(ctx: PageContext): string {
   const count =
     `<span class="font-semibold">${formatCount(feeds.length)}</span> matching` +
     (hidden > 0 ? `, first ${formatCount(shown.length)} shown` : '') +
+    (feeds.length > 1 && !ctx.filters.q.trim() ? ', newest schedule first' : '') +
     (unplaced > 0
       ? ` <span class="opacity-60">(${formatCount(unplaced)} have no coordinates and are not on the map)</span>`
       : '');
