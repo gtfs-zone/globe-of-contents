@@ -1,17 +1,17 @@
 /**
  * Filter state, its two homes, and the matching itself.
  *
- * The URL hash is what a shared link carries: `q`, `status` (a comma list of
- * states) and `rt`. The same filters are also kept per device in
- * localStorage, and restored only when a visit arrives with an empty hash, so a
- * link always wins over whatever the recipient last looked at.
+ * Home's URL hash is what a shared link carries: `q`, `status` (a comma list
+ * of states) and `rt`. The same filters are also kept per device in
+ * localStorage, and restored only when a visit arrives with no filters in the
+ * hash, so a filtered link always wins over whatever the recipient last looked
+ * at.
  */
 
 import uFuzzy from '@leeoniya/ufuzzy';
 import { CONFIG } from '../config';
 import type { CatalogueIndex, Feed, State } from '../data/artifacts';
 import { STATES, hasRealtime } from '../data/artifacts';
-import { PAGE_KEYS } from '../types/page-state';
 import { readStored, writeStored } from './storage';
 
 export interface Filters {
@@ -30,13 +30,13 @@ function parseStatus(value: unknown): State[] {
 }
 
 /**
- * Filters from a hash. At boot (`fromDevice`), a hash naming nothing falls back
- * to the device's last filters; a later hash change never does, since an empty
+ * Filters from a hash. At boot (`fromDevice`), a hash naming no filter falls
+ * back to the device's last filters; a later hash change never does, since an empty
  * hash then means the filters were cleared.
  */
 export function readFilters(hash: string, fromDevice = false): Filters {
   const params = new URLSearchParams(hash);
-  const named = [...FILTER_KEYS, ...PAGE_KEYS].some((key) => params.has(key));
+  const named = FILTER_KEYS.some((key) => params.has(key));
   if (fromDevice && !named) {
     const stored = readStored<Filters>(CONFIG.FILTERS_KEY);
     return {
