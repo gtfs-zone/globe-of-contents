@@ -1,21 +1,11 @@
 import { renderMoonIcon, renderNavIcon, renderSunIcon, type NavIconName } from 'interlocking/ui/nav-icons';
 import type { NavbarAction } from 'interlocking/ui/navbar-actions';
-import { CONFIG } from '../config';
 
 /**
  * This app's navbar action row and dock artwork. Element ids are the contract
  * with the click wiring in `src/index.ts`.
  */
 export const NAVBAR_ACTIONS: NavbarAction[] = [
-  {
-    // The raw artifacts, for anyone who would rather have the JSON.
-    kind: 'link',
-    id: 'data-link',
-    label: 'Raw data (feeds.json)',
-    icon: renderNavIcon('feedData'),
-    href: `${CONFIG.DATA_BASE}/feeds.json`,
-    external: true,
-  },
   {
     kind: 'toggle',
     id: 'theme-toggle',
