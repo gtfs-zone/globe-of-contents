@@ -29,9 +29,9 @@ artifacts. Production always reads `https://data.gtfs.zone`.
   (DMFR carries none; only the Mobility Database does), and the map always says
   how many it is not drawing.
 - **Search:** the box on the map narrows the list and the map as you type and
-  offers the best matches in a dropdown. Status chips and a "has realtime"
-  toggle sit under it. All of it is mirrored into the URL hash, so a filtered
-  view is a link.
+  offers the best matches in a dropdown. The state counts at the top of the list
+  and a "realtime only" switch under them filter it. All of it is mirrored into the URL hash, so a
+  filtered view is a link.
 - **The sidebar,** hash-routed with breadcrumbs:
   - Home: the filtered feeds. At most 200 are painted; the count says how many
     more match.

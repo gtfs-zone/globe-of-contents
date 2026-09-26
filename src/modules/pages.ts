@@ -4,8 +4,8 @@
  * Home is the filtered feed list, a Feed page is one logical feed with its
  * roles and member rows, and a Source page is one catalog row with its last
  * check. Links carry their page state in `data-nav`, and the few writes (the
- * status shortcuts, the guide links) in `data-action`; `PanelHost` delegates
- * both.
+ * status and realtime shortcuts, the guide links) in `data-action`; `PanelHost`
+ * delegates both.
  */
 
 import type { BreadcrumbItem } from 'interlocking/ui/breadcrumb-trail';
@@ -134,13 +134,18 @@ function renderStats(ctx: PageContext): string {
         <div class="stat-value text-lg ${cls}">${formatCount(value)}</div>
       </button>`;
   };
+  const rt = ctx.filters.rt;
   return `
     <div class="stats stats-horizontal bg-base-200 w-full text-center">
       ${stat('Feeds', feeds.total, '', '')}
       ${STATES.map((state) =>
         stat(STATE_LABELS[state], feeds.by_state[state] ?? 0, state === 'up' ? 'text-success' : state === 'down' ? 'text-error' : 'opacity-60', state)
       ).join('')}
-    </div>`;
+    </div>
+    <label class="flex items-center gap-2 text-xs cursor-pointer">
+      <input type="checkbox" class="toggle toggle-xs" data-action="rt" ${rt ? 'checked' : ''} />
+      Only feeds with realtime
+    </label>`;
 }
 
 function roleChips(feed: Feed): string {
