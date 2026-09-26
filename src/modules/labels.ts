@@ -36,6 +36,29 @@ export const STATE_BADGE: Record<State, string> = {
   unknown: 'badge-ghost',
 };
 
+/** Hover text for the Feed and Source pages' field labels. */
+export const FIELD_HINTS: Record<string, string> = {
+  Place: 'Where the catalog places this feed. Only the Mobility Database carries coordinates.',
+  'Schedule size': "The schedule zip's size, from the Content-Length header of the last check.",
+  'Last modified': "The schedule's Last-Modified header from the last check.",
+  'Feed id': "This merged feed's id on list.gtfs.zone.",
+  Operator: 'The agency or organisation the catalog says runs this feed.',
+  'Catalog id': "This entry's id in its catalog; links to the catalog's own page for it.",
+  From: 'Where the catalog itself got this entry.',
+  'Catalog status': "The catalog's own lifecycle for this entry: active, deprecated, inactive and so on.",
+  License: 'The license the catalog lists for this feed.',
+  'Same endpoint as': 'Entries in other catalogs pointing at the same URL.',
+  'Redirects to': 'Where the URL ended up after following redirects on the last check.',
+  State: 'Up: answered on the last check. Down: failed it. Inaccessible: needs a key or was not checked. Click for the guide.',
+  'HTTP status': 'The status code of the last check.',
+  Error: 'Why the last check failed.',
+  Latency: 'How long the last check took to answer.',
+  'Failed checks in a row': 'Consecutive daily checks that failed.',
+  'Down since': 'When the URL stopped answering.',
+  'In this state since': 'When the current state was first seen.',
+  Access: 'URLs that need an API key are never checked.',
+};
+
 const ERROR_LABELS: Record<string, string> = {
   dns: 'DNS lookup failed',
   tls: 'TLS error',

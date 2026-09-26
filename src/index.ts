@@ -12,6 +12,7 @@ import { feedProgressIndicator } from 'interlocking/ui/progress-indicator';
 import { SearchController } from 'interlocking/ui/search-controller';
 import { ThemeController } from 'interlocking/ui/theme-controller';
 import { escapeHtml } from 'interlocking/util/escape-html';
+import { initFieldTooltipPortal } from 'interlocking/util/tooltip-position';
 import { CONFIG } from './config';
 import type { Catalogue, Feed, State } from './data/artifacts';
 import { CatalogueIndex, loadCatalogue } from './data/artifacts';
@@ -39,6 +40,7 @@ const appContainer = document.querySelector<HTMLElement>('.app-container')!;
 restorePanelWidth(appContainer);
 
 notify.initialize();
+initFieldTooltipPortal();
 const themeController = new ThemeController();
 themeController.initialize();
 
