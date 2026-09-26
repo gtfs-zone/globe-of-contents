@@ -7,8 +7,8 @@
  * count. Each marker's ring is split by the cluster's up/down/unchecked share,
  * which is the zoomed-out view of the whole world's reachability.
  *
- * Unplaced feeds are not drawn at all. The caller shows their count beside
- * the map, since much of the corpus has no coordinates and a map that quietly
+ * Unplaced feeds are not drawn at all. The Home list shows their count
+ * instead, since much of the corpus has no coordinates and a map that quietly
  * dropped them would mislead.
  */
 

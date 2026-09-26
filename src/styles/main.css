@@ -10,20 +10,6 @@
     dark --prefersdark;
 }
 
-/* Phone: the unplaced count wraps onto its own line under the search card
-   rather than squeezing it. */
-@media (max-width: 767px) {
-  #map-controls {
-    flex-wrap: wrap;
-  }
-
-  #unplaced-slot {
-    flex-basis: 100%;
-    justify-content: flex-start;
-    margin-left: 0;
-  }
-}
-
 /* Cluster markers: a ring split by state share, with the count on a disc. */
 .cluster-marker {
   border-radius: 9999px;

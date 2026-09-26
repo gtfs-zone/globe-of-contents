@@ -20,7 +20,7 @@ git config core.hooksPath .githooks   # once per clone; runs typecheck pre-commi
 ## Layout
 
 ```
-src/shell.ts               mounts interlocking's app shell, plus the filter chips and unplaced card
+src/shell.ts               mounts interlocking's app shell and sets up its search box
 src/config.ts              every magic number and URL, one frozen CONFIG
 src/data/artifacts.ts      artifact types (mirroring geometry-car's artifacts.py), the fetch, CatalogueIndex
 src/types/page-state.ts    home | feed | source, and their hash codec
@@ -39,8 +39,8 @@ src/modules/help-pages.ts  the Guide's pages
 - **The artifact shapes belong to geometry-car.** `src/data/artifacts.ts`
   mirrors `geometry_car/artifacts.py`; a field change starts there.
 - **Unplaced feeds are counted, never hidden.** Much of the corpus has no
-  coordinates. Every view that draws the map also says how many feeds it is not
-  drawing.
+  coordinates. The Home list says how many of the feeds it lists are not on
+  the map.
 - **Feeds, not rows.** The list, the map and the search are over `feeds.json`.
   `sources.json` rows only appear as a feed's members and on their own Source
   page; the feed-to-row grouping is geometry-car's, never recomputed here.

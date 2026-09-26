@@ -3,7 +3,7 @@ import './shell';
 import { renderAutoZoomControl, syncAutoZoomControl, wireAutoZoomControl } from 'interlocking/map/auto-zoom';
 import { BottomSheetController } from 'interlocking/ui/bottom-sheet';
 import { pageTitle } from 'interlocking/ui/breadcrumb-trail';
-import { installGuideButtons, setHelpPages, showHelpModal } from 'interlocking/ui/help-modal';
+import { setHelpPages, showHelpModal } from 'interlocking/ui/help-modal';
 import { renderDockIcons, renderNavbarActions } from 'interlocking/ui/navbar-actions';
 import { notify } from 'interlocking/ui/notification-system';
 import { PanelHost } from 'interlocking/ui/panel-host';
@@ -14,12 +14,12 @@ import { ThemeController } from 'interlocking/ui/theme-controller';
 import { escapeHtml } from 'interlocking/util/escape-html';
 import { CONFIG } from './config';
 import type { Catalogue, Feed, State } from './data/artifacts';
-import { CatalogueIndex, STATES, loadCatalogue } from './data/artifacts';
+import { CatalogueIndex, loadCatalogue } from './data/artifacts';
 import { AppState } from './modules/app-state';
 import type { Filters } from './modules/filters';
 import { FeedFilter, buildHaystack, filterParams, readFilters, saveFilters, sameFilters } from './modules/filters';
 import { HELP_GROUP_ORDER, HELP_PAGES, setHelpVersion } from './modules/help-pages';
-import { formatBytes, formatCount, formatDate } from './modules/labels';
+import { formatBytes, formatDate } from './modules/labels';
 import { GlobeMap } from './modules/map-view';
 import { DOCK_ICONS, NAVBAR_ACTIONS } from './modules/navbar-action-list';
 import { placeFor, renderPage, validateState } from './modules/pages';
@@ -84,6 +84,8 @@ const panel = new PanelHost<PageState>(panelContent, {
       void showHelpModal(arg || undefined);
     } else if (action === 'status') {
       setFilters({ status: arg ? [arg as State] : [] });
+    } else if (action === 'rt') {
+      setFilters({ rt: !filters.rt });
     }
   },
 });
@@ -111,30 +113,11 @@ appState.pages.setFeedParams(filterParams(filters), false);
 // ─── Filters ──────────────────────────────────────────────────────────────────
 
 const searchInput = document.getElementById('map-search') as HTMLInputElement;
-const rtToggle = document.getElementById('filter-rt') as HTMLInputElement;
-const chips = [...document.querySelectorAll<HTMLButtonElement>('#filter-chips [data-state]')];
 
 function syncControls(): void {
   if (searchInput.value !== filters.q) {
     searchInput.value = filters.q;
   }
-  rtToggle.checked = filters.rt;
-  for (const chip of chips) {
-    const on = filters.status.includes(chip.dataset.state as State);
-    chip.classList.toggle('btn-active', on);
-    chip.setAttribute('aria-pressed', String(on));
-  }
-}
-
-function renderUnplaced(feeds: Feed[]): void {
-  const card = document.getElementById('unplaced-card')!;
-  const unplaced = feeds.reduce((n, feed) => (feed.lat === undefined ? n + 1 : n), 0);
-  card.classList.remove('hidden');
-  card.innerHTML =
-    `<span class="font-semibold">${formatCount(feeds.length - unplaced)}</span> on the map, ` +
-    `<span class="font-semibold">${formatCount(unplaced)}</span> with no coordinates ` +
-    '<span class="opacity-60">(list only, <button type="button" class="link" data-open-guide="unplaced">why?</button>)</span>';
-  installGuideButtons(card);
 }
 
 /** Re-run the filters over the catalogue and repaint everything they drive. */
@@ -144,7 +127,6 @@ function applyFilters(): void {
   }
   filtered = feedFilter.apply(filters);
   map.setFeeds(filtered);
-  renderUnplaced(filtered);
   const focus = appState.focus;
   if (focus.type === 'home') {
     panel.show(focus, appState.breadcrumbs);
@@ -169,15 +151,6 @@ searchInput.addEventListener('input', () => {
     setFilters({ q: searchInput.value });
   }, CONFIG.FILTER_DEBOUNCE_MS);
 });
-
-for (const chip of chips) {
-  chip.addEventListener('click', () => {
-    const state = chip.dataset.state as State;
-    const on = filters.status.includes(state);
-    setFilters({ status: STATES.filter((s) => (s === state ? !on : filters.status.includes(s))) });
-  });
-}
-rtToggle.addEventListener('change', () => setFilters({ rt: rtToggle.checked }));
 
 // Back/forward, or a pasted hash. The page half is the manager's; this picks
 // up the filter half, which only a Home hash carries.
@@ -221,7 +194,6 @@ function start(data: Catalogue): void {
 
   filtered = feedFilter.apply(filters);
   map.setFeeds(filtered);
-  renderUnplaced(filtered);
 
   if (pending.type !== 'home' && !validateState(index, pending)) {
     notify.warning(`Nothing in this catalogue matches the linked ${pending.type}`);

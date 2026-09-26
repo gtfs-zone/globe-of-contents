@@ -50,7 +50,7 @@ const overviewPage: HelpPage = {
           icon: ICON_SEARCH,
           term: 'Search',
           description:
-            'Typing in the search box narrows the list and the map as you type, and offers the best matches in a dropdown. The chips under it filter by state and by whether a feed has realtime.',
+            'Typing in the search box narrows the list and the map as you type, and offers the best matches in a dropdown. The counts at the top of the list filter it by state, and the switch under them to feeds with realtime.',
         },
         {
           icon: ICON_MAP,
