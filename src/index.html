@@ -3,6 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!--
+      On /feed/<id>/<slug>, nginx SSI replaces the home block below with the
+      feed's head fragment from data.gtfs.zone. Elsewhere SSI is off, the
+      directives are inert comments and the block renders as plain markup.
+    -->
+    <!--# block name="home_head" -->
     <title>list.gtfs.zone - Every public GTFS feed</title>
     <meta name="description" content="A list and a world map of every public GTFS and GTFS Realtime feed in Transitland and the Mobility Database, checked daily for whether it still answers." />
     <link rel="canonical" href="https://list.gtfs.zone/" />
@@ -13,13 +19,18 @@
     <meta property="og:description" content="A list and a world map of every public GTFS and GTFS Realtime feed in Transitland and the Mobility Database, checked daily for whether it still answers." />
     <meta property="og:image" content="https://list.gtfs.zone/logo.svg" />
     <meta name="twitter:card" content="summary" />
-    <link rel="icon" type="image/svg+xml" href="logo.svg" />
+    <!--# endblock -->
+    <!--# block name="empty" --><!--# endblock -->
+    <!--# include virtual="/_page/$fid/head.html" stub="home_head" -->
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" />
     <link rel="stylesheet" href="./styles/main.css" />
   </head>
 
   <body class="font-sans h-screen overflow-hidden">
     <!-- The shell markup is mounted by src/shell.ts -->
+    <!-- The feed's body fragment, for crawlers; removed by src/boot-path.ts -->
+    <main id="prerendered"><!--# include virtual="/_page/$fid/body.html" stub="empty" --></main>
     <script type="module" src="./index.ts"></script>
   </body>
 </html>

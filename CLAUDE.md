@@ -20,6 +20,7 @@ git config core.hooksPath .githooks   # once per clone; runs typecheck pre-commi
 ## Layout
 
 ```
+src/boot-path.ts           rewrites a crawlable /feed/<id>/<slug> URL to #feed=<id> before anything reads the hash
 src/shell.ts               mounts interlocking's app shell and sets up its search box
 src/config.ts              every magic number and URL, one frozen CONFIG
 src/data/artifacts.ts      artifact types (mirroring geometry-car's artifacts.py), the fetch, CatalogueIndex
@@ -36,6 +37,12 @@ src/modules/help-pages.ts  the Guide's pages
 - **The artifacts are never served from this origin.** `nginx.conf` caches
   `.json` as immutable for a year, which is right for fingerprinted assets and
   wrong for data that refreshes daily. Do not move them into `public/`.
+- **Feed pages are for crawlers.** `/feed/<id>/<slug>` is `index.html` with
+  geometry-car's `pages/feed/<id>/{head,body}.html` fragments included by nginx
+  SSI (`src/index.html`, `nginx.conf`); `/sitemap.xml` is proxied from the same
+  bucket. `nginx.conf` is an envsubst template: `PAGES_UPSTREAM` defaults to
+  `https://data.gtfs.zone` and the cluster points it at Garage directly. The
+  app itself still routes on the hash; `boot-path.ts` converts on load.
 - **The artifact shapes belong to geometry-car.** `src/data/artifacts.ts`
   mirrors `geometry_car/artifacts.py`; a field change starts there.
 - **Unplaced feeds are counted, never hidden.** Much of the corpus has no
