@@ -22,6 +22,7 @@ import {
   ROLE_LABELS,
   STATE_BADGE,
   STATE_LABELS,
+  catalogUrl,
   feedStatusLine,
   formatBytes,
   formatCount,
@@ -110,6 +111,13 @@ function externalLink(url: string): string {
   return /^https?:\/\//.test(url)
     ? `<a class="link" href="${safe}" target="_blank" rel="noopener noreferrer">${safe}</a>`
     : `<code>${safe}</code>`;
+}
+
+/** A row's catalog id, linked to the catalog's page for it when there is one. */
+function catalogId(row: SourceRow): string {
+  const id = `<code>${escapeHtml(row.feedId)}</code>`;
+  const url = catalogUrl(row);
+  return url ? `<a class="link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${id}</a>` : id;
 }
 
 function guideLink(page: string, text: string): string {
@@ -299,6 +307,14 @@ function renderFeed(ctx: PageContext, feed: Feed): string {
 
 // ─── Source ───────────────────────────────────────────────────────────────────
 
+function catalogBadge(row: SourceRow): string {
+  const label = escapeHtml(CATALOG_LABELS[row.catalog] ?? row.catalog);
+  const url = catalogUrl(row);
+  return url
+    ? `<a class="badge badge-outline hover:badge-neutral" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`
+    : `<span class="badge badge-outline">${label}</span>`;
+}
+
 function renderSource(ctx: PageContext, row: SourceRow): string {
   const entry = ctx.index.status[row.rowId];
   const state = stateOf(row, ctx.index.status);
@@ -333,7 +349,7 @@ function renderSource(ctx: PageContext, row: SourceRow): string {
     <div class="flex flex-wrap items-center gap-2">
       ${stateBadge(state)}
       <span class="badge badge-outline">${KIND_LABELS[row.kind]}</span>
-      <span class="badge badge-outline">${escapeHtml(CATALOG_LABELS[row.catalog] ?? row.catalog)}</span>
+      ${catalogBadge(row)}
       ${line ? `<span class="text-sm ${state === 'down' ? 'text-error' : 'opacity-70'}">${escapeHtml(line)}</span>` : ''}
     </div>
     ${row.note ? `<div class="alert alert-info alert-soft text-sm whitespace-pre-line">${escapeHtml(row.note)}</div>` : ''}
@@ -341,7 +357,7 @@ function renderSource(ctx: PageContext, row: SourceRow): string {
       <tbody>
         ${field('Operator', escapeHtml(row.operator_name))}
         ${field('Place', place ? escapeHtml(place) : unplacedNote())}
-        ${field('Catalog id', `<code>${escapeHtml(row.feedId)}</code>`)}
+        ${field('Catalog id', catalogId(row))}
         ${field('From', escapeHtml(row.source))}
         ${field('Catalog status', escapeHtml(row.feed_status ?? ''))}
         ${field('License', row.license_url ? externalLink(row.license_url) : '')}
