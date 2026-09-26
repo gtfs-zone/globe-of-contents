@@ -1,4 +1,6 @@
-// Mounts the shell markup; must stay the first import.
+// Rewrites a /feed/<id> path to its hash; must run before the shell mounts.
+import './boot-path';
+// Mounts the shell markup; must stay the first import after boot-path.
 import './shell';
 import { renderAutoZoomControl, syncAutoZoomControl, wireAutoZoomControl } from 'interlocking/map/auto-zoom';
 import { BottomSheetController } from 'interlocking/ui/bottom-sheet';
@@ -93,7 +95,8 @@ const panel = new PanelHost<PageState>(panelContent, {
 });
 panel.initialize();
 
-const DEFAULT_TITLE = document.title;
+// Not read from document.title: on a /feed/ path nginx serves the feed's title.
+const DEFAULT_TITLE = 'list.gtfs.zone - Every public GTFS feed';
 
 const appState = new AppState({
   onStateChange: () => {},
