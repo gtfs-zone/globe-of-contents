@@ -5,7 +5,8 @@
  * search pick, hash change and boot restore all converge on it. The hash's
  * other half is the filters, set with `setFilterParams`, which replaces the
  * hash in place so typing in the search box leaves no history entry per
- * keystroke.
+ * keystroke. Only Home's hash carries the filters; a Feed or Source hash names
+ * just the page.
  */
 
 import type { BreadcrumbItem } from 'interlocking/ui/breadcrumb-trail';
@@ -24,9 +25,16 @@ const CODEC: PageStateCodec<PageState> = {
   isPageState,
 };
 
+/** A page state manager whose Feed and Source hashes leave the filters out. */
+class AppPages extends PageStateManager<PageState, BreadcrumbItem<PageState>> {
+  override buildHash(state: PageState): string {
+    return state.type === 'home' ? super.buildHash(state) : pageToParams(state).toString();
+  }
+}
+
 export class AppState extends FocusController<PageState, BreadcrumbItem<PageState>> {
   constructor(hooks: FocusHooks<PageState>) {
-    super(new PageStateManager<PageState, BreadcrumbItem<PageState>>({ codec: CODEC, enableUrlSync: true }), hooks);
+    super(new AppPages({ codec: CODEC, enableUrlSync: true }), hooks);
   }
 
   /** Point the breadcrumbs and the hash validator at the loaded catalogue. */

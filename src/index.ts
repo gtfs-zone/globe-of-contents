@@ -25,6 +25,7 @@ import { DOCK_ICONS, NAVBAR_ACTIONS } from './modules/navbar-action-list';
 import { placeFor, renderPage, validateState } from './modules/pages';
 import { SearchEntries } from './modules/search-entries';
 import type { PageState } from './types/page-state';
+import { pageFromParams } from './types/page-state';
 
 // ─── Shell ────────────────────────────────────────────────────────────────────
 
@@ -179,9 +180,13 @@ for (const chip of chips) {
 rtToggle.addEventListener('change', () => setFilters({ rt: rtToggle.checked }));
 
 // Back/forward, or a pasted hash. The page half is the manager's; this picks
-// up the filter half.
+// up the filter half, which only a Home hash carries.
 window.addEventListener('hashchange', () => {
-  const next = readFilters(window.location.hash.slice(1));
+  const hash = window.location.hash.slice(1);
+  if (pageFromParams(new URLSearchParams(hash)).type !== 'home') {
+    return;
+  }
+  const next = readFilters(hash);
   if (sameFilters(next, filters)) {
     return;
   }

@@ -26,9 +26,6 @@ export function isPageState(value: unknown): value is PageState {
   }
 }
 
-/** Hash keys the page half owns; everything else in the hash is a filter. */
-export const PAGE_KEYS = ['feed', 'source'];
-
 export function pageToParams(state: PageState): URLSearchParams {
   const params = new URLSearchParams();
   if (state.type === 'feed') {

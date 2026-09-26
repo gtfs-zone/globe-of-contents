@@ -47,8 +47,8 @@ src/modules/help-pages.ts  the Guide's pages
 - **Every focus change goes through `appState.setFocus`:** list links, map
   clicks, search picks and breadcrumbs alike. The sidebar and the camera react
   to `onFocusChange`, not to each other.
-- **State split:** filters (`q`, `status`, `rt`) and the open page (`feed=` or
-  `source=`) go in the URL hash (a link reproduces the view); map view, basemap
+- **State split:** filters (`q`, `status`, `rt`) go in Home's URL hash, and a
+  Feed or Source hash carries only the page (`feed=` or `source=`); map view, basemap
   and last filters go in localStorage under `gc.`-prefixed keys. The `theme` key stays un-prefixed and shared, so
   the moon toggle agrees across every gtfs.zone site.
 - Cluster counts are HTML markers, not a symbol layer: the shared raster
