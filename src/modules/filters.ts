@@ -80,7 +80,7 @@ export function sameFilters(a: Filters, b: Filters): boolean {
 const uf = new uFuzzy({ intraIns: 1 });
 
 // Above this many text matches uFuzzy skips its ranking pass; the matches
-// then keep catalogue order, which is by name.
+// then keep catalogue order, newest schedule first.
 const RANK_THRESHOLD = 1000;
 
 /**

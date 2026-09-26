@@ -226,9 +226,23 @@ export function hasRealtime(feed: Feed): boolean {
   return RT_ROLES.some((role) => (feed.urls[role]?.length ?? 0) > 0);
 }
 
+/**
+ * Feeds in list order: newest schedule Last-Modified first, then feeds without
+ * one, each group by name. Parses every date once rather than per comparison.
+ */
+export function sortFeeds(feeds: Feed[]): Feed[] {
+  const keyed = feeds.map((feed) => {
+    const time = feed.lastModified ? Date.parse(feed.lastModified) : NaN;
+    return { feed, time: Number.isNaN(time) ? -Infinity : time, name: feed.name || feed.feedId };
+  });
+  keyed.sort((a, b) => (a.time === b.time ? a.name.localeCompare(b.name) : b.time - a.time));
+  return keyed.map(({ feed }) => feed);
+}
+
 /** The loaded catalogue, keyed every way the pages look it up. */
 export class CatalogueIndex {
   readonly generatedAt: string;
+  /** Every feed, in list order (see `sortFeeds`). */
   readonly feeds: Feed[];
   readonly status: Record<string, StatusEntry>;
   readonly summary: Summary;
@@ -238,7 +252,7 @@ export class CatalogueIndex {
 
   constructor(data: Catalogue) {
     this.generatedAt = data.generatedAt;
-    this.feeds = [...data.feeds].sort((a, b) => (a.name || a.feedId).localeCompare(b.name || b.feedId));
+    this.feeds = sortFeeds(data.feeds);
     this.status = data.status;
     this.summary = data.summary;
     this.feedById = new Map(this.feeds.map((feed) => [feed.feedId, feed]));

@@ -56,7 +56,7 @@ const overviewPage: HelpPage = {
           icon: ICON_MAP,
           term: 'Browse',
           description:
-            'Pick a feed from the list, the map or the dropdown to see its schedule and realtime URLs, and every catalog entry it was built from.',
+            'The list puts the most recently modified schedules first, or the best matches first while searching. Pick a feed from the list, the map or the dropdown to see its schedule and realtime URLs, and every catalog entry it was built from.',
         },
         {
           icon: ICON_OPEN,
