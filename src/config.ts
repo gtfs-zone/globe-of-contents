@@ -56,4 +56,8 @@ export const CONFIG = Object.freeze({
   // test-track: a shared link should always land on the stable public app.
   EDITOR_BASE: 'https://edit.gtfs.zone',
   VIEWER_BASE: 'https://viz.rt.gtfs.zone',
+
+  // Catalog pages a source row's id links to.
+  TRANSITLAND_FEED_BASE: 'https://www.transit.land/feeds/',
+  MOBILITYDATABASE_FEED_BASE: 'https://mobilitydatabase.org/feeds/',
 });

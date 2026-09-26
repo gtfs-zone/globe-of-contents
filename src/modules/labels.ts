@@ -3,6 +3,7 @@
  * and the search box so the same feed never reads two different ways.
  */
 
+import { CONFIG } from '../config';
 import type { Feed, Place, Role, SourceRow, State, StatusEntry } from '../data/artifacts';
 
 export const CATALOG_LABELS: Record<string, string> = {
@@ -106,6 +107,17 @@ export function feedStatusLine(feed: Feed): string {
     return feed.auth?.length ? 'needs an API key' : '';
   }
   return '';
+}
+
+/** The catalog's own page for a row, when it has one. */
+export function catalogUrl(row: SourceRow): string | null {
+  if (row.catalog === 'transitland') {
+    return `${CONFIG.TRANSITLAND_FEED_BASE}${encodeURIComponent(row.feedId)}`;
+  }
+  if (row.catalog === 'mobilitydatabase') {
+    return `${CONFIG.MOBILITYDATABASE_FEED_BASE}${row.kind === 'rt' ? 'gtfs_rt' : 'gtfs'}/${encodeURIComponent(row.feedId)}`;
+  }
+  return null;
 }
 
 export function placeLine(place: Place): string {
