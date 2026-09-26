@@ -362,7 +362,7 @@ function renderSource(ctx: PageContext, row: SourceRow): string {
           ${field('Latency', entry?.latency_ms !== undefined ? `${entry.latency_ms} ms` : '')}
           ${field('Failed checks in a row', entry?.failures ? String(entry.failures) : '')}
           ${field(state === 'down' ? 'Down since' : 'In this state since', formatDate(entry?.since))}
-          ${field('Access', row.auth ? 'needs an API key; not checked' : '')}
+          ${field('Access', row.auth ? 'needs an API key' : '')}
         </tbody>
       </table>
     </section>`;

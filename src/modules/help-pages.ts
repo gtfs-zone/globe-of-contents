@@ -71,9 +71,9 @@ const overviewPage: HelpPage = {
 
 const statesPage: HelpPage = {
   id: 'states',
-  label: 'Up, down, not checked',
+  label: 'Up, down, inaccessible',
   group: 'Reference',
-  title: 'What up, down and not checked mean',
+  title: 'What up, down and inaccessible mean',
   render: () =>
     [
       lede(
@@ -93,9 +93,9 @@ const statesPage: HelpPage = {
         },
         {
           icon: ICON_UNKNOWN,
-          term: 'Not checked',
+          term: 'Inaccessible',
           description:
-            'The URL needs an API key, or has not been checked yet. A curated example that resolves differently per app is also left unchecked.',
+            'The URL needs an API key, or has not been checked yet. A curated example that resolves differently per app is also never checked.',
         },
       ]),
       lede(
