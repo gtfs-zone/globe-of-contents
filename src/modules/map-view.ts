@@ -4,7 +4,7 @@
  *
  * Clusters are HTML markers rather than a symbol layer, because none of the
  * shared raster basemaps carries a glyphs URL and so a map layer cannot draw a
- * count. Each marker's ring is split by the cluster's up/down/unchecked share,
+ * count. Each marker's ring is split by the cluster's up/down/inaccessible share,
  * which is the zoomed-out view of the whole world's reachability.
  *
  * Unplaced feeds are not drawn at all. The Home list shows their count
@@ -367,7 +367,7 @@ export class GlobeMap {
       `conic-gradient(${this.colors.up} 0deg ${upEnd}deg, ` +
       `${this.colors.down} ${upEnd}deg ${downEnd}deg, ` +
       `${this.colors.unknown} ${downEnd}deg 360deg)`;
-    el.title = `${total} feeds: ${up} up, ${down} down, ${total - up - down} not checked`;
+    el.title = `${total} feeds: ${up} up, ${down} down, ${total - up - down} inaccessible`;
     el.innerHTML = `<span>${abbreviate(total)}</span>`;
     el.addEventListener('click', (event) => {
       event.stopPropagation();

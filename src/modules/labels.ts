@@ -26,7 +26,7 @@ export const ROLE_LABELS: Record<Role, string> = {
 export const STATE_LABELS: Record<State, string> = {
   up: 'Up',
   down: 'Down',
-  unknown: 'Not checked',
+  unknown: 'Inaccessible',
 };
 
 export const STATE_BADGE: Record<State, string> = {
@@ -78,7 +78,7 @@ export function statusLine(row: SourceRow, state: State, entry: StatusEntry | un
     if (row.auth) {
       return 'needs an API key';
     }
-    return row.catalog === 'curated' ? 'resolves per app' : 'not checked yet';
+    return row.catalog === 'curated' ? 'resolves per app' : '';
   }
   if (state === 'up') {
     return entry?.latency_ms !== undefined ? `${entry.latency_ms} ms` : '';
@@ -97,13 +97,13 @@ export function statusLine(row: SourceRow, state: State, entry: StatusEntry | un
   return parts.join(', ');
 }
 
-/** A feed's state in a few words: when it went down, or why it is unchecked. */
+/** A feed's state in a few words: when it went down, or why it is inaccessible. */
 export function feedStatusLine(feed: Feed): string {
   if (feed.state === 'down') {
     return feed.since ? `never reached since ${formatDate(feed.since)}` : 'not answering';
   }
   if (feed.state === 'unknown') {
-    return feed.auth?.length ? 'needs an API key' : 'not checked yet';
+    return feed.auth?.length ? 'needs an API key' : '';
   }
   return '';
 }

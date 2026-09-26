@@ -25,9 +25,9 @@ artifacts. Production always reads `https://data.gtfs.zone`.
 
 - **The map:** one point per logical feed (a transit system, bundling its
   schedule and realtime across every catalog that lists it), clustered, each
-  cluster ringed by its up/down/unchecked share. Many feeds have no coordinates
-  (DMFR carries none; only the Mobility Database does), and the map always says
-  how many it is not drawing.
+  cluster ringed by its up/down/inaccessible share. Many feeds have no
+  coordinates (DMFR carries none; only the Mobility Database does), and the
+  list says how many it is not drawing.
 - **Search:** the box on the map narrows the list and the map as you type and
   offers the best matches in a dropdown. The state counts at the top of the list
   and a "realtime only" switch under them filter it. All of it is mirrored into the URL hash, so a
