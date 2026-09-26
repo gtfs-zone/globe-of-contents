@@ -9,6 +9,7 @@
  */
 
 import type { BreadcrumbItem } from 'interlocking/ui/breadcrumb-trail';
+import { TOOLTIP_TRIGGER_CLASS, renderTooltipTrigger, tooltipContentAttr } from 'interlocking/ui/field-label';
 import { escapeHtml } from 'interlocking/util/escape-html';
 import { CONFIG } from '../config';
 import type { CatalogueIndex, Feed, Role, SourceRow, State } from '../data/artifacts';
@@ -18,6 +19,7 @@ import { editorUrl, viewerUrl } from './app-links';
 import type { Filters } from './filters';
 import {
   CATALOG_LABELS,
+  FIELD_HINTS,
   KIND_LABELS,
   ROLE_LABELS,
   STATE_BADGE,
@@ -100,11 +102,22 @@ function stateBadge(state: State, size = ''): string {
   return `<span class="badge ${size} ${STATE_BADGE[state]}">${STATE_LABELS[state]}</span>`;
 }
 
-function field(label: string, value: string): string {
+const HINTED_LABEL = 'underline decoration-dotted underline-offset-2 cursor-help';
+
+/** A field's label, with its hover text from `FIELD_HINTS` when it has one. */
+function fieldLabel(label: string): string {
+  const hint = FIELD_HINTS[label];
+  return hint ? renderTooltipTrigger(hint, `<span class="${HINTED_LABEL}">${label}</span>`) : label;
+}
+
+function field(label: string, value: string, labelHtml = fieldLabel(label)): string {
   return value
-    ? `<tr><th class="font-normal opacity-60 align-top whitespace-nowrap pr-4">${label}</th><td class="break-all">${value}</td></tr>`
+    ? `<tr><th class="font-normal opacity-60 align-top whitespace-nowrap pr-4">${labelHtml}</th><td class="break-all">${value}</td></tr>`
     : '';
 }
+
+// The State label explains itself on hover and opens the guide on click.
+const STATE_FIELD_LABEL = `<button type="button" class="${TOOLTIP_TRIGGER_CLASS} ${HINTED_LABEL}" data-action="guide" data-arg="states" ${tooltipContentAttr(FIELD_HINTS.State)}>State</button>`;
 
 function externalLink(url: string): string {
   const safe = escapeHtml(url);
@@ -369,10 +382,10 @@ function renderSource(ctx: PageContext, row: SourceRow): string {
       <table class="table table-sm"><tbody>${urls}${redirect}</tbody></table>
     </section>
     <section>
-      <h3 class="text-xs uppercase tracking-wide opacity-50 mb-1">Last check (${guideLink('states', 'what this means')})</h3>
+      <h3 class="text-xs uppercase tracking-wide opacity-50 mb-1">Last check</h3>
       <table class="table table-sm">
         <tbody>
-          ${field('State', stateBadge(state, 'badge-sm'))}
+          ${field('State', stateBadge(state, 'badge-sm'), STATE_FIELD_LABEL)}
           ${field('HTTP status', entry?.code ? String(entry.code) : '')}
           ${field('Error', escapeHtml(entry?.error ?? ''))}
           ${field('Latency', entry?.latency_ms !== undefined ? `${entry.latency_ms} ms` : '')}
