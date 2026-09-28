@@ -1,3 +1,10 @@
+## v0.4.0 (2026-09-29)
+
+### Feat
+
+- **help**: name the catalogs' licenses
+- **pages**: show the schedule's content report on feed pages
+
 ## v0.3.0 (2026-09-26)
 
 ### Feat
