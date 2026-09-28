@@ -151,12 +151,15 @@ const sourcesPage: HelpPage = {
     [
       lede('Three catalogs, refreshed daily by geometry-car:'),
       `<ul class="list-disc list-inside space-y-1 text-sm">
-        <li>${renderExternalLink('https://github.com/transitland/transitland-atlas', 'Transitland Atlas')}: the open DMFR corpus</li>
-        <li>${renderExternalLink('https://mobilitydatabase.org', 'Mobility Database')}: MobilityData's catalog, with places</li>
+        <li>${renderExternalLink('https://github.com/transitland/transitland-atlas', 'Transitland Atlas')}: the open DMFR corpus, ${renderExternalLink('https://creativecommons.org/licenses/by/4.0/', 'CC BY 4.0')}</li>
+        <li>${renderExternalLink('https://mobilitydatabase.org', 'Mobility Database')}: MobilityData's catalog, with places, ${renderExternalLink('https://creativecommons.org/publicdomain/zero/1.0/', 'CC0')}</li>
         <li>gtfs.zone's own curated examples, the feeds the load dialogs offer first</li>
       </ul>`,
       lede(
         `Everything this page shows is published as JSON at ${renderExternalLink('https://data.gtfs.zone/manifest.json', 'data.gtfs.zone')}: <code>feeds.json</code> for the merged feeds, <code>sources.json</code> for the catalog entries and <code>status.json</code> for each check.`
+      ),
+      lede(
+        "The catalogs list where feeds are; the feeds themselves belong to their publishers. Each feed's page links the license its catalog records, and that license, not this site's, is what covers the data."
       ),
     ].join(''),
 };
