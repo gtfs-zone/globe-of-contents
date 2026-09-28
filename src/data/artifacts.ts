@@ -57,6 +57,24 @@ export interface SourceRow extends Place {
   state?: State;
 }
 
+/** What the schedule's last download held, from cape-flier's content report. */
+export interface FeedContent {
+  /** ok, not_zip, missing_files, parse_error, http_error, timeout, memory, error. */
+  state: string;
+  since: string;
+  checked: string;
+  /** For not_zip, what came back instead: html, json, xml, empty, unknown. */
+  detail?: string;
+  serviceStart?: string;
+  serviceEnd?: string;
+  publisher?: string;
+  version?: string;
+  routes?: number;
+  stops?: number;
+  trips?: number;
+  routeTypes?: number[];
+}
+
 export interface Feed extends Place {
   feedId: string;
   name: string;
@@ -74,6 +92,8 @@ export interface Feed extends Place {
   lastModified?: string;
   /** When the feed's overall state was reached. */
   since?: string;
+  /** Only for feeds sites.gtfs.zone builds a timetable site from. */
+  content?: FeedContent;
 }
 
 export interface StatusEntry {

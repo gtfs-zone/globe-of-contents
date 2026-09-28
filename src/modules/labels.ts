@@ -4,7 +4,7 @@
  */
 
 import { CONFIG } from '../config';
-import type { Feed, Place, Role, SourceRow, State, StatusEntry } from '../data/artifacts';
+import type { Feed, FeedContent, Place, Role, SourceRow, State, StatusEntry } from '../data/artifacts';
 
 export const CATALOG_LABELS: Record<string, string> = {
   transitland: 'Transitland',
@@ -36,11 +36,42 @@ export const STATE_BADGE: Record<State, string> = {
   unknown: 'badge-ghost',
 };
 
+export const CONTENT_LABELS: Record<string, string> = {
+  ok: 'Valid GTFS zip',
+  not_zip: 'Not a zip',
+  missing_files: 'Missing GTFS files',
+  parse_error: 'Unreadable zip',
+  http_error: 'Download failed',
+  timeout: 'Download timed out',
+  memory: 'Too large to process',
+  error: 'Processing failed',
+};
+
+const SNIFF_LABELS: Record<string, string> = {
+  html: 'an HTML page',
+  json: 'JSON',
+  xml: 'XML',
+  empty: 'an empty response',
+};
+
+/** The last download's outcome, with what came back when it was not a zip. */
+export function contentLine(content: FeedContent): string {
+  const label = CONTENT_LABELS[content.state] ?? content.state;
+  const sniffed = content.state === 'not_zip' && content.detail ? SNIFF_LABELS[content.detail] : undefined;
+  return sniffed ? `${label}: ${sniffed}` : label;
+}
+
 /** Hover text for the Feed and Source pages' field labels. */
 export const FIELD_HINTS: Record<string, string> = {
   Place: 'Where the catalog places this feed. Only the Mobility Database carries coordinates.',
   'Schedule size': "The schedule zip's size, from the Content-Length header of the last check.",
   'Last modified': "The schedule's Last-Modified header from the last check.",
+  'Schedule contents':
+    'What the last download of the schedule held, from sites.gtfs.zone, which builds a timetable site from it. Only checked for feeds it builds.',
+  Service: 'The first and last service day in the schedule, from its calendars.',
+  Publisher: "The publisher named in the schedule's feed_info.txt.",
+  Version: "The version named in the schedule's feed_info.txt.",
+  Contents: 'Routes, stops and trips in the schedule.',
   'Feed id': "This merged feed's id on list.gtfs.zone.",
   Operator: 'The agency or organisation the catalog says runs this feed.',
   'Catalog id': "This entry's id in its catalog; links to the catalog's own page for it.",

@@ -20,6 +20,7 @@ import type { Filters } from './filters';
 import {
   CATALOG_LABELS,
   FIELD_HINTS,
+  contentLine,
   KIND_LABELS,
   ROLE_LABELS,
   STATE_BADGE,
@@ -282,6 +283,8 @@ function renderFeed(ctx: PageContext, feed: Feed): string {
   const place = placeLine(feed);
   const roles = ROLES.filter((role) => feed.urls[role]?.length);
   const members = ctx.index.membersOf(feed);
+  const content = feed.content;
+  const contentBad = content !== undefined && content.state !== 'ok';
 
   const buttons = [
     edit
@@ -297,6 +300,7 @@ function renderFeed(ctx: PageContext, feed: Feed): string {
       ${stateBadge(feed.state)}
       ${line ? `<span class="text-sm ${feed.state === 'down' ? 'text-error' : 'opacity-70'}">${escapeHtml(line)}</span>` : ''}
       ${feed.state === 'up' && feed.since ? `<span class="text-sm opacity-70">up since ${formatDate(feed.since)}</span>` : ''}
+      ${contentBad ? `<span class="badge badge-warning">${escapeHtml(contentLine(content))}</span>` : ''}
     </div>
     ${buttons ? `<div class="flex flex-wrap gap-2">${buttons}</div>` : ''}
     <table class="table table-sm">
@@ -304,6 +308,11 @@ function renderFeed(ctx: PageContext, feed: Feed): string {
         ${field('Place', place ? escapeHtml(place) : unplacedNote())}
         ${field('Schedule size', feed.staticBytes !== undefined ? formatBytes(feed.staticBytes) : '')}
         ${field('Last modified', formatDate(feed.lastModified))}
+        ${content ? field('Schedule contents', `${escapeHtml(contentLine(content))}, since ${formatDate(content.since)}`) : ''}
+        ${field('Service', content?.serviceStart && content.serviceEnd ? `${formatDate(content.serviceStart)} to ${formatDate(content.serviceEnd)}` : '')}
+        ${field('Publisher', escapeHtml(content?.publisher ?? ''))}
+        ${field('Version', escapeHtml(content?.version ?? ''))}
+        ${field('Contents', content?.routes !== undefined ? `${formatCount(content.routes)} routes, ${formatCount(content.stops ?? 0)} stops, ${formatCount(content.trips ?? 0)} trips` : '')}
         ${field('Feed id', `<code>${escapeHtml(feed.feedId)}</code>`)}
       </tbody>
     </table>
