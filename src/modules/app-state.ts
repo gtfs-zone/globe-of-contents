@@ -37,10 +37,17 @@ export class AppState extends FocusController<PageState, BreadcrumbItem<PageStat
     super(new AppPages({ codec: CODEC, enableUrlSync: true }), hooks);
   }
 
-  /** Point the breadcrumbs and the hash validator at the loaded catalogue. */
-  setIndex(index: CatalogueIndex): void {
+  /**
+   * Point the breadcrumbs and the hash validator at the loaded catalogue. A
+   * Source hash checked before the rows are in waits for `detailSettled`.
+   */
+  setIndex(index: CatalogueIndex, detailSettled: () => Promise<void>): void {
     this.pages.setBreadcrumbBuilder((state) => buildBreadcrumbs(index, state));
-    this.pages.setStateValidator((state) => validateState(index, state));
+    this.pages.setStateValidator((state) =>
+      state.type === 'source' && !index.hasDetail
+        ? detailSettled().then(() => validateState(index, state))
+        : validateState(index, state)
+    );
   }
 
   /** Replace the filter half of the hash, without a history entry. */

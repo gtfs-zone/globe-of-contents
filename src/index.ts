@@ -16,8 +16,8 @@ import { ThemeController } from 'interlocking/ui/theme-controller';
 import { escapeHtml } from 'interlocking/util/escape-html';
 import { initFieldTooltipPortal } from 'interlocking/util/tooltip-position';
 import { CONFIG } from './config';
-import type { Catalogue, Feed, State } from './data/artifacts';
-import { CatalogueIndex, loadCatalogue } from './data/artifacts';
+import type { CoreCatalogue, DetailCatalogue, Feed, State } from './data/artifacts';
+import { CatalogueIndex, loadCore, loadDetail } from './data/artifacts';
 import { AppState } from './modules/app-state';
 import type { Filters } from './modules/filters';
 import { FeedFilter, buildHaystack, filterParams, readFilters, saveFilters, sameFilters } from './modules/filters';
@@ -76,13 +76,16 @@ let feedFilter: FeedFilter | null = null;
 let searchEntries: SearchEntries | null = null;
 let filters: Filters = readFilters(window.location.hash.slice(1), true);
 let filtered: Feed[] = [];
+let detailFailed = false;
+// Settles, never rejects, once the current detail fetch lands or fails.
+let detailSettled: Promise<void> = Promise.resolve();
 
 const panelContent = document.getElementById('panel-content')!;
 const panel = new PanelHost<PageState>(panelContent, {
   navigate: (state) => appState.setFocus(state),
   href: (state) => appState.hrefFor(state),
   renderPage: (state) =>
-    index ? renderPage({ index, filtered, filters, href: (s) => appState.hrefFor(s) }, state) : '',
+    index ? renderPage({ index, filtered, filters, href: (s) => appState.hrefFor(s), detailFailed }, state) : '',
   action: (action, arg) => {
     if (action === 'guide') {
       void showHelpModal(arg || undefined);
@@ -90,6 +93,8 @@ const panel = new PanelHost<PageState>(panelContent, {
       setFilters({ status: arg ? [arg as State] : [] });
     } else if (action === 'rt') {
       setFilters({ rt: !filters.rt });
+    } else if (action === 'detail-retry') {
+      startDetail();
     }
   },
 });
@@ -188,25 +193,75 @@ searchController.initialize();
 
 const pending = appState.pages.pendingStateFromURL();
 
-function start(data: Catalogue): void {
+/** The list's filter and the search box's entries, over the index as it stands. */
+function buildSearch(): void {
+  const haystack = buildHaystack(index!);
+  feedFilter = new FeedFilter(index!, haystack);
+  searchEntries = new SearchEntries(index!, haystack);
+}
+
+/** Re-render a Feed or Source page in place, keeping its scroll. */
+function refreshPanel(): void {
+  if (appState.focus.type !== 'home') {
+    panel.setBreadcrumbs(appState.breadcrumbs);
+  }
+}
+
+function start(data: CoreCatalogue): void {
   index = new CatalogueIndex(data);
-  const haystack = buildHaystack(index);
-  feedFilter = new FeedFilter(index, haystack);
-  searchEntries = new SearchEntries(index, haystack);
-  appState.setIndex(index);
+  buildSearch();
+  appState.setIndex(index, () => detailSettled);
 
   document.getElementById('generated-at')!.textContent = `Checked ${formatDate(data.generatedAt)}`;
 
-  filtered = feedFilter.apply(filters);
+  filtered = feedFilter!.apply(filters);
   map.setFeeds(filtered);
 
-  if (pending.type !== 'home' && !validateState(index, pending)) {
+  // A Source link is adopted as-is; `onDetail` checks it once the rows are in.
+  if (pending.type === 'feed' && !validateState(index, pending)) {
     notify.warning(`Nothing in this catalogue matches the linked ${pending.type}`);
     appState.adopt({ type: 'home' });
   } else {
     appState.adopt(pending);
   }
   appState.replaceHash();
+
+  startDetail();
+}
+
+function onDetail(data: DetailCatalogue): void {
+  index!.attachDetail(data);
+  // Member rows add catalog names and operators to the haystack.
+  buildSearch();
+  if (filters.q.trim()) {
+    applyFilters();
+  }
+
+  const focus = appState.focus;
+  if (focus.type === 'source') {
+    if (!index!.row(focus.source)) {
+      notify.warning('Nothing in this catalogue matches the linked source');
+      appState.adopt({ type: 'home' });
+      appState.replaceHash();
+      return;
+    }
+    // Repaint the whole focus: the row's place and breadcrumbs were unknown.
+    appState.repaint();
+    return;
+  }
+  refreshPanel();
+}
+
+/** Fetch the rows and their checks behind the painted map. */
+function startDetail(): void {
+  detailFailed = false;
+  refreshPanel();
+  detailSettled = loadDetail().then(onDetail, (err: unknown) => {
+    const message = err instanceof Error ? err.message : String(err);
+    detailFailed = true;
+    notify.warning(`Could not load the catalog sources: ${message}`);
+    refreshPanel();
+  });
 }
 
 const LOAD_OP = 'catalogue';
@@ -230,7 +285,7 @@ function reportProgress(received: number, total: number | null): void {
 
 function boot(): void {
   feedProgressIndicator.startLoading(LOAD_OP, 'Loading the catalogue');
-  loadCatalogue(reportProgress)
+  loadCore(reportProgress)
     .then(start)
     .catch((err: unknown) => {
       const message = err instanceof Error ? err.message : String(err);

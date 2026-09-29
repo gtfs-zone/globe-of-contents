@@ -40,6 +40,8 @@ export interface PageContext {
   filtered: Feed[];
   filters: Filters;
   href: (state: PageState) => string;
+  /** Whether fetching the rows and their checks failed. */
+  detailFailed: boolean;
 }
 
 const HOME: PageState = { type: 'home' };
@@ -136,6 +138,13 @@ function catalogId(row: SourceRow): string {
 
 function guideLink(page: string, text: string): string {
   return `<button type="button" class="link" data-action="guide" data-arg="${page}">${text}</button>`;
+}
+
+/** Stands in for what the rows and their checks draw until they are in. */
+function detailPending(ctx: PageContext): string {
+  return ctx.detailFailed
+    ? `<p class="text-xs text-error py-2">The catalog sources did not load. <button type="button" class="link" data-action="detail-retry">Retry</button></p>`
+    : '<p class="text-xs opacity-60 py-2">Loading the catalog sources...</p>';
 }
 
 function unplacedNote(): string {
@@ -283,6 +292,7 @@ function renderFeed(ctx: PageContext, feed: Feed): string {
   const place = placeLine(feed);
   const roles = ROLES.filter((role) => feed.urls[role]?.length);
   const members = ctx.index.membersOf(feed);
+  const sourceCount = ctx.index.hasDetail ? members.length : feed.members.length;
   const content = feed.content;
   const contentBad = content !== undefined && content.state !== 'ok';
 
@@ -322,9 +332,13 @@ function renderFeed(ctx: PageContext, feed: Feed): string {
     </section>
     <section>
       <h3 class="text-xs uppercase tracking-wide opacity-50 mb-1">
-        ${members.length} catalog ${members.length === 1 ? 'source' : 'sources'} (${guideLink('merging', 'how feeds are merged')})
+        ${sourceCount} catalog ${sourceCount === 1 ? 'source' : 'sources'} (${guideLink('merging', 'how feeds are merged')})
       </h3>
-      <div class="rounded-box border border-base-300 bg-base-100">${members.map((row) => renderMember(ctx, row)).join('')}</div>
+      ${
+        ctx.index.hasDetail
+          ? `<div class="rounded-box border border-base-300 bg-base-100">${members.map((row) => renderMember(ctx, row)).join('')}</div>`
+          : detailPending(ctx)
+      }
     </section>`;
 }
 
@@ -415,6 +429,9 @@ export function renderPage(ctx: PageContext, state: PageState): string {
     return feed ? renderFeed(ctx, feed) : '';
   }
   if (state.type === 'source') {
+    if (!ctx.index.hasDetail) {
+      return detailPending(ctx);
+    }
     const row = ctx.index.row(state.source);
     return row ? renderSource(ctx, row) : '';
   }

@@ -10,6 +10,10 @@
  * `manifest.json` is fetched first and revalidated every time; every other
  * artifact is fetched with its manifest hash in the query string, so a browser
  * cache can only ever serve the bytes the manifest names.
+ *
+ * Loading comes in two stages: the core (`feeds.json`, `summary.json`) paints
+ * the map, the list and the search; the detail (`sources.json`, `status.json`)
+ * follows for member rows, Source pages and the search's catalog names.
  */
 
 import { CONFIG } from '../config';
@@ -127,23 +131,24 @@ interface Manifest {
   artifacts: Record<string, { sha256: string; bytes: number }>;
 }
 
-export interface Catalogue {
+/** What the map, the list and the search need: painted as soon as it lands. */
+export interface CoreCatalogue {
   generatedAt: string;
   feeds: Feed[];
-  sources: SourceRow[];
-  status: Record<string, StatusEntry>;
   summary: Summary;
 }
 
+/** The catalog rows and their checks, fetched behind the core. */
+export interface DetailCatalogue {
+  sources: SourceRow[];
+  status: Record<string, StatusEntry>;
+}
+
 /**
- * Bytes received so far across every artifact, against the manifest's total.
- * `total` is null once the two stop being comparable.
+ * Bytes received so far across a stage's artifacts, against the manifest's
+ * total. `total` is null once the two stop being comparable.
  */
 export type ProgressHandler = (received: number, total: number | null) => void;
-
-const ARTIFACTS = ['feeds.json', 'sources.json', 'status.json', 'summary.json'] as const;
-
-let cached: Promise<Catalogue> | null = null;
 
 async function fetchManifest(): Promise<Manifest> {
   const url = `${CONFIG.DATA_BASE}/manifest.json`;
@@ -153,6 +158,23 @@ async function fetchManifest(): Promise<Manifest> {
   }
   return (await res.json()) as Manifest;
 }
+
+/**
+ * A load run once per session unless it fails. A failure is not kept, so a
+ * retry refetches rather than replaying the same rejection. Arguments only
+ * reach the call that starts the load.
+ */
+function sessionCached<A extends unknown[], T>(load: (...args: A) => Promise<T>): (...args: A) => Promise<T> {
+  let cached: Promise<T> | null = null;
+  return (...args) =>
+    (cached ??= load(...args).catch((err: unknown) => {
+      cached = null;
+      throw err;
+    }));
+}
+
+/** The manifest both stages read. */
+const loadManifest = sessionCached(fetchManifest);
 
 /** Fetch and parse one JSON body, reporting each chunk's size as it arrives. */
 async function fetchCounted<T>(url: string, onChunk: (bytes: number) => void): Promise<T> {
@@ -178,10 +200,11 @@ async function fetchCounted<T>(url: string, onChunk: (bytes: number) => void): P
   return JSON.parse(text) as T;
 }
 
-async function fetchCatalogue(onProgress?: ProgressHandler): Promise<Catalogue> {
-  const manifest = await fetchManifest();
+/** Fetch the named artifacts in parallel, at the hashes the manifest names. */
+async function fetchArtifacts(names: string[], onProgress?: ProgressHandler): Promise<unknown[]> {
+  const manifest = await loadManifest();
 
-  const entries = ARTIFACTS.map((name) => {
+  const entries = names.map((name) => {
     const entry = manifest.artifacts[name];
     if (!entry) {
       throw new Error(`manifest.json does not list ${name}`);
@@ -207,34 +230,35 @@ async function fetchCatalogue(onProgress?: ProgressHandler): Promise<Catalogue> 
   };
   onProgress?.(0, total);
 
-  const [feeds, sources, status, summary] = await Promise.all(
+  return Promise.all(
     entries.map(({ name, entry }) =>
       fetchCounted<unknown>(`${CONFIG.DATA_BASE}/${name}?v=${entry.sha256.slice(0, 16)}`, counter(name, entry.bytes))
     )
   );
-
-  return {
-    generatedAt: manifest.generated_at,
-    feeds: (feeds as { feeds: Feed[] }).feeds,
-    sources: (sources as { sources: SourceRow[] }).sources,
-    status: (status as { sources: Record<string, StatusEntry> }).sources,
-    summary: summary as Summary,
-  };
 }
 
 /**
- * The whole catalogue, fetched once per session unless a fetch fails.
- * `onProgress` only hears about a fetch this call started.
+ * The feeds and the summary. `onProgress` only hears about a fetch this call
+ * started.
  */
-export function loadCatalogue(onProgress?: ProgressHandler): Promise<Catalogue> {
-  cached ??= fetchCatalogue(onProgress).catch((err: unknown) => {
-    // Not cached on failure, so a retry refetches rather than replaying the
-    // same rejection for the rest of the session.
-    cached = null;
-    throw err;
-  });
-  return cached;
-}
+export const loadCore = sessionCached(async (onProgress?: ProgressHandler): Promise<CoreCatalogue> => {
+  const manifest = await loadManifest();
+  const [feeds, summary] = await fetchArtifacts(['feeds.json', 'summary.json'], onProgress);
+  return {
+    generatedAt: manifest.generated_at,
+    feeds: (feeds as { feeds: Feed[] }).feeds,
+    summary: summary as Summary,
+  };
+});
+
+/** The catalog rows and their checks. */
+export const loadDetail = sessionCached(async (): Promise<DetailCatalogue> => {
+  const [sources, status] = await fetchArtifacts(['sources.json', 'status.json']);
+  return {
+    sources: (sources as { sources: SourceRow[] }).sources,
+    status: (status as { sources: Record<string, StatusEntry> }).sources,
+  };
+});
 
 /** A row's state, from the status document when it has one. */
 export function stateOf(row: SourceRow, status: Record<string, StatusEntry>): State {
@@ -259,29 +283,43 @@ export function sortFeeds(feeds: Feed[]): Feed[] {
   return keyed.map(({ feed }) => feed);
 }
 
-/** The loaded catalogue, keyed every way the pages look it up. */
+/**
+ * The loaded catalogue, keyed every way the pages look it up. Built from the
+ * core; the rows and their checks arrive later through `attachDetail`, and
+ * until then `row` finds nothing and `membersOf` is empty.
+ */
 export class CatalogueIndex {
   readonly generatedAt: string;
   /** Every feed, in list order (see `sortFeeds`). */
   readonly feeds: Feed[];
-  readonly status: Record<string, StatusEntry>;
   readonly summary: Summary;
+  status: Record<string, StatusEntry> = {};
   private feedById: Map<string, Feed>;
-  private rowById: Map<string, SourceRow>;
+  private rowById = new Map<string, SourceRow>();
   private feedOfRow = new Map<string, Feed>();
+  private detail = false;
 
-  constructor(data: Catalogue) {
+  constructor(data: CoreCatalogue) {
     this.generatedAt = data.generatedAt;
     this.feeds = sortFeeds(data.feeds);
-    this.status = data.status;
     this.summary = data.summary;
     this.feedById = new Map(this.feeds.map((feed) => [feed.feedId, feed]));
-    this.rowById = new Map(data.sources.map((row) => [row.rowId, row]));
     for (const feed of this.feeds) {
       for (const member of feed.members) {
         this.feedOfRow.set(member, feed);
       }
     }
+  }
+
+  /** Whether the rows and their checks are in. */
+  get hasDetail(): boolean {
+    return this.detail;
+  }
+
+  attachDetail(data: DetailCatalogue): void {
+    this.rowById = new Map(data.sources.map((row) => [row.rowId, row]));
+    this.status = data.status;
+    this.detail = true;
   }
 
   feed(feedId: string): Feed | undefined {
