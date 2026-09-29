@@ -1,3 +1,9 @@
+## v0.4.1 (2026-09-30)
+
+### Perf
+
+- **data**: paint the map before the catalog rows and checks load
+
 ## v0.4.0 (2026-09-29)
 
 ### Feat
