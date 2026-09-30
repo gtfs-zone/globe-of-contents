@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "vuln": "sh scripts/vuln-gate.sh"
   },
   "keywords": [
     "gtfs",
