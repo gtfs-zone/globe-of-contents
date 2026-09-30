@@ -5,7 +5,7 @@ each one still answers. Deployed at `list.gtfs.zone`.
 
 A static Vite/TypeScript/daisyUI app with no backend of its own. Everything it
 shows comes from the artifacts
-[geometry-car](https://git.kcfam.us/gtfs.zone/geometry-car) publishes daily to
+[geometry-car](https://github.com/gtfs-zone/geometry-car) publishes daily to
 `data.gtfs.zone`: `manifest.json` first, then `feeds.json`, `sources.json`,
 `status.json` and `summary.json` at the hashes the manifest names.
 
