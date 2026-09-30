@@ -1,3 +1,9 @@
+## v0.5.0 (2026-09-30)
+
+### Feat
+
+- **feeds**: partial state, role chips, shared search and place search
+
 ## v0.4.1 (2026-09-30)
 
 ### Perf
