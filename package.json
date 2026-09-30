@@ -20,17 +20,17 @@
   "license": "AGPL-3.0",
   "devDependencies": {
     "@types/geojson": "^7946.0.16",
-    "@types/node": "^24.12.2",
-    "autoprefixer": "^10.5.0",
-    "tailwindcss": "^4.2.4",
+    "@types/node": "^24.19.0",
+    "autoprefixer": "^10.6.1",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
-    "vite": "^7.3.2"
+    "vite": "^7.3.6"
   },
   "dependencies": {
-    "@leeoniya/ufuzzy": "^1.0.14",
-    "@tailwindcss/postcss": "^4.2.4",
-    "daisyui": "^5.5.19",
-    "interlocking": "git+https://git.kcfam.us/gtfs.zone/interlocking.git#v3.7.0",
-    "maplibre-gl": "^5.7.2"
+    "@leeoniya/ufuzzy": "^1.0.19",
+    "@tailwindcss/postcss": "^4.3.3",
+    "daisyui": "^5.7.46",
+    "interlocking": "github:gtfs-zone/interlocking#v4.0.0",
+    "maplibre-gl": "^6.11.2"
   }
 }

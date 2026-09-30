@@ -12,7 +12,7 @@
  * dropped them would mislead.
  */
 
-import maplibregl from 'maplibre-gl';
+import * as maplibregl from 'maplibre-gl';
 import type {
   GeoJSONSource,
   LngLatBoundsLike,
@@ -22,7 +22,7 @@ import type {
 } from 'maplibre-gl';
 import type { Feature, FeatureCollection, Point, Polygon } from 'geojson';
 import { AutoZoom } from 'interlocking/map/auto-zoom';
-import { BasemapControl, initialMapStyle } from 'interlocking/map/basemap-control';
+import { BasemapControl, initialMapStyle, onBasemapChanged } from 'interlocking/map/basemap-control';
 import { fitPadding } from 'interlocking/map/fit-padding';
 import { SearchPlaceMarker } from 'interlocking/map/place-search';
 import type { PlacePayload } from 'interlocking/map/place-search';
@@ -113,7 +113,7 @@ export class GlobeMap {
     this.resolveColors();
     this.map.once('load', () => this.installLayers());
     // setStyle drops every source and layer this class added.
-    this.map.on('basemap:changed', () => {
+    onBasemapChanged(this.map, () => {
       this.installLayers();
       this.placeMarker.redraw();
     });
