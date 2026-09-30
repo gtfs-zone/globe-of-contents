@@ -5,12 +5,13 @@
  * of states) and `rt`. The same filters are also kept per device in
  * localStorage, and restored only when a visit arrives with no filters in the
  * hash, so a filtered link always wins over whatever the recipient last looked
- * at.
+ * at. The text matching is interlocking's, so a query finds the same feeds
+ * here as in the editor's and the viewer's pickers.
  */
 
-import uFuzzy from '@leeoniya/ufuzzy';
+import { FeedMatcher } from 'interlocking/gtfs/feed-search';
 import { CONFIG } from '../config';
-import type { CatalogueIndex, Feed, State } from '../data/artifacts';
+import type { Feed, State } from '../data/artifacts';
 import { STATES, hasRealtime } from '../data/artifacts';
 import { readStored, writeStored } from './storage';
 
@@ -75,70 +76,59 @@ export function sameFilters(a: Filters, b: Filters): boolean {
   return a.q === b.q && a.rt === b.rt && a.status.join(',') === b.status.join(',');
 }
 
-// Same tolerance as interlocking's search box: one inserted character inside
-// a term, terms themselves in any order.
-const uf = new uFuzzy({ intraIns: 1 });
+/** A point Home lists feeds by distance from: a picked place, never in the hash. */
+export interface Near {
+  name: string;
+  lon: number;
+  lat: number;
+}
 
-// Above this many text matches uFuzzy skips its ranking pass; the matches
-// then keep catalogue order, newest schedule first.
-const RANK_THRESHOLD = 1000;
+const EARTH_RADIUS_KM = 6371;
 
-/**
- * Everything a text query matches against, one string per feed: its own name
- * and place, and the names, operators and catalog ids of every member row, so
- * a feed is found by whatever any catalog calls it.
- */
-export function buildHaystack(index: CatalogueIndex): string[] {
-  return index.feeds.map((feed) => {
-    const parts = new Set<string>();
-    for (const value of [feed.name, feed.municipality, feed.subdivision, feed.country, feed.country_code]) {
-      if (value) {
-        parts.add(value);
-      }
+/** Great-circle distance in km. */
+function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const rad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * rad;
+  const dLon = (lon2 - lon1) * rad;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2;
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(a));
+}
+
+/** Placed feeds nearest first, then the unplaced ones in their existing order. */
+function byDistance(feeds: Feed[], near: Near): Feed[] {
+  const placed: { feed: Feed; km: number }[] = [];
+  const unplaced: Feed[] = [];
+  for (const feed of feeds) {
+    if (feed.lat === undefined || feed.lon === undefined) {
+      unplaced.push(feed);
+    } else {
+      placed.push({ feed, km: haversine(near.lat, near.lon, feed.lat, feed.lon) });
     }
-    for (const row of index.membersOf(feed)) {
-      for (const value of [row.name, row.operator_name, row.feedId, row.municipality, row.subdivision]) {
-        if (value) {
-          parts.add(value);
-        }
-      }
-    }
-    return [...parts].join(' ');
-  });
+  }
+  placed.sort((a, b) => a.km - b.km);
+  return [...placed.map(({ feed }) => feed), ...unplaced];
 }
 
 export class FeedFilter {
   private feeds: Feed[];
-  private haystack: string[];
-  private lastQuery: string | null = null;
-  private lastText: number[] | null = null;
+  private matcher: FeedMatcher;
 
-  constructor(index: CatalogueIndex, haystack: string[]) {
-    this.feeds = index.feeds;
-    this.haystack = haystack;
+  constructor(feeds: Feed[]) {
+    this.feeds = feeds;
+    this.matcher = new FeedMatcher(feeds);
   }
 
-  /** Indexes into `feeds` matching the text query, in rank order. */
-  private textMatches(query: string): number[] | null {
-    if (!query) {
-      return null;
-    }
-    if (query === this.lastQuery) {
-      return this.lastText;
-    }
-    const [idxs, info, order] = uf.search(this.haystack, query, 1, RANK_THRESHOLD);
-    const ranked = info && order ? order.map((o) => info.idx[o]) : (idxs ?? []);
-    this.lastQuery = query;
-    this.lastText = ranked;
-    return ranked;
-  }
-
-  apply(filters: Filters): Feed[] {
-    const text = this.textMatches(filters.q.trim());
+  /**
+   * The feeds the filters let through: best text match first while searching,
+   * else catalogue order; nearest first when there is a `near` point.
+   */
+  apply(filters: Filters, near: Near | null = null): Feed[] {
+    const text = this.matcher.match(filters.q);
     const candidates = text ? text.map((i) => this.feeds[i]) : this.feeds;
     const states = new Set(filters.status);
-    return candidates.filter(
+    const kept = candidates.filter(
       (feed) => (states.size === 0 || states.has(feed.state)) && (!filters.rt || hasRealtime(feed))
     );
+    return near ? byDistance(kept, near) : kept;
   }
 }

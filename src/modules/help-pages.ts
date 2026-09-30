@@ -25,6 +25,7 @@ const ICON_MAP = icon(
 const ICON_OPEN = icon('<path d="M18 5h9v9"/><path d="M27 5L15 17"/><path d="M24 19v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V11a2 2 0 0 1 2-2h7"/>');
 const ICON_UP = icon('<circle cx="16" cy="16" r="10"/><path d="M11 16l4 4 7-8"/>');
 const ICON_DOWN = icon('<circle cx="16" cy="16" r="10"/><path d="M12 12l8 8M20 12l-8 8"/>');
+const ICON_PARTIAL = icon('<circle cx="16" cy="16" r="10"/><path d="M16 6a10 10 0 0 1 0 20z" fill="currentColor"/>');
 const ICON_UNKNOWN = icon('<circle cx="16" cy="16" r="10"/><path d="M11 16h10"/>');
 
 let appVersion = '';
@@ -43,14 +44,14 @@ const overviewPage: HelpPage = {
     [
       eyebrow('list.gtfs.zone'),
       lede(
-        'Every public GTFS schedule and GTFS Realtime feed in the Transitland Atlas, the Mobility Database and the gtfs.zone curated examples, merged into one entry per transit system and checked every day.'
+        'Every public GTFS schedule and GTFS Realtime feed in the Transitland Atlas, the Mobility Database and rt.gtfs.zone, merged into one entry per transit system and checked every day.'
       ),
       glyphList([
         {
           icon: ICON_SEARCH,
           term: 'Search',
           description:
-            'Typing in the search box narrows the list and the map as you type, and offers the best matches in a dropdown. The counts at the top of the list filter it by state, and the switch under them to feeds with realtime.',
+            'Typing in the search box narrows the list and the map as you type, and offers the best matches in a dropdown: by name, place, or the host a feed is served from. Places and points of interest are offered under the matches; picking one moves the map there and lists the nearest feeds first. The counts at the top of the list filter it by state, and the switch under them to feeds with realtime.',
         },
         {
           icon: ICON_MAP,
@@ -71,35 +72,46 @@ const overviewPage: HelpPage = {
 
 const statesPage: HelpPage = {
   id: 'states',
-  label: 'Up, down, inaccessible',
+  label: 'Up, partial, down, inaccessible',
   group: 'Reference',
-  title: 'What up, down and inaccessible mean',
+  title: 'What up, partial, down and inaccessible mean',
   render: () =>
     [
       lede(
         'Once a day every URL is asked for its headers only: a HEAD request, or a one-byte ranged GET when the server refuses HEAD. No feed is downloaded.'
       ),
+      lede(
+        'A URL is up when it answered with a success, possibly after redirects, and down when the check failed: DNS, TLS, a timeout, a refused connection or an HTTP error. A URL that needs an API key is never checked.'
+      ),
+      lede(
+        'A feed has roles: its schedule, and its realtime trip updates, vehicle positions and service alerts. A role is up when any of its URLs answered, so one catalog listing a mistyped URL does not take down a feed whose other URL works. The feed itself is:'
+      ),
       glyphList([
         {
           icon: ICON_UP,
           term: 'Up',
-          description: 'The URL answered with a success, possibly after redirects.',
+          description: 'Its schedule and every realtime role answered.',
+        },
+        {
+          icon: ICON_PARTIAL,
+          term: 'Partial',
+          description:
+            'Its schedule answered, but at least one realtime role did not. Without a checked schedule, some realtime roles answered and some did not.',
         },
         {
           icon: ICON_DOWN,
           term: 'Down',
           description:
-            'The last check failed: DNS, TLS, a timeout, a refused connection or an HTTP error. "Never reached since" is when it last stopped answering.',
+            'Its schedule did not answer. "Down since" is when it stopped answering. Without a checked schedule, none of its realtime roles answered.',
         },
         {
           icon: ICON_UNKNOWN,
           term: 'Inaccessible',
-          description:
-            'The URL needs an API key, or has not been checked yet. A curated example that resolves differently per app is also never checked.',
+          description: 'Nothing it lists could be checked: every URL needs an API key, or none has been checked yet.',
         },
       ]),
       lede(
-        'A feed is up when every URL it lists that could be checked answered, and down when any of them did not. A role is up when at least one of its URLs answered, so a feed can read down while each of its roles still has a working URL: the feed page shows which.'
+        'The chips on each feed are its realtime roles: TU for trip updates, VP for vehicle positions, SA for service alerts, and RT for a realtime URL whose catalog does not say which of the three it serves. Each is green when it answered the last check, red when it did not, and grey when it was not checked.'
       ),
     ].join(''),
 };
@@ -122,7 +134,9 @@ const mergingPage: HelpPage = {
       lede(
         'There is no fuzzy matching on names, so two entries for the same system with different URLs and no cross-reference stay separate. A feed keeps its id across days as long as most of its entries stay together.'
       ),
-      lede('The name comes from the curated examples first, then the Mobility Database, then Transitland.'),
+      lede(
+        "The name is the Transitland operator's, else the Mobility Database provider's (its feed name becomes the subtitle), else the single agency the schedule names, else any catalog entry's. Every other name is kept, and search finds the feed by any of them."
+      ),
     ].join(''),
 };
 
@@ -153,10 +167,10 @@ const sourcesPage: HelpPage = {
       `<ul class="list-disc list-inside space-y-1 text-sm">
         <li>${renderExternalLink('https://github.com/transitland/transitland-atlas', 'Transitland Atlas')}: the open DMFR corpus, ${renderExternalLink('https://creativecommons.org/licenses/by/4.0/', 'CC BY 4.0')}</li>
         <li>${renderExternalLink('https://mobilitydatabase.org', 'Mobility Database')}: MobilityData's catalog, with places, ${renderExternalLink('https://creativecommons.org/publicdomain/zero/1.0/', 'CC0')}</li>
-        <li>gtfs.zone's own curated examples, the feeds the load dialogs offer first</li>
+        <li>${renderExternalLink('https://rt.gtfs.zone/feeds', 'rt.gtfs.zone')}: the realtime feeds gtfs.zone serves itself, such as Amtrak</li>
       </ul>`,
       lede(
-        `Everything this page shows is published as JSON at ${renderExternalLink('https://data.gtfs.zone/manifest.json', 'data.gtfs.zone')}: <code>feeds.json</code> for the merged feeds, <code>sources.json</code> for the catalog entries and <code>status.json</code> for each check.`
+        `Everything this page shows is published as JSON at ${renderExternalLink('https://data.gtfs.zone/manifest.json', 'data.gtfs.zone')}: <code>search.json</code> for the merged feeds in brief, <code>feeds.json</code> for them in full, <code>sources.json</code> for the catalog entries and <code>status.json</code> for each check.`
       ),
       lede(
         "The catalogs list where feeds are; the feeds themselves belong to their publishers. Each feed's page links the license its catalog records, and that license, not this site's, is what covers the data."

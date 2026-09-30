@@ -1,31 +1,38 @@
 /**
  * The artifacts geometry-car publishes, and the one way to fetch them.
  *
- * Field names mirror geometry-car's `artifacts.py`. `feeds.json` is what the
- * app lists and maps: one logical feed per transit system, bundling its static
- * and realtime roles across catalogs. `sources.json` is the raw catalog layer
- * a feed's `members` point into, and `status.json` carries each row's last
- * check.
+ * Field names mirror geometry-car's `artifacts.py`. A feed is one logical
+ * transit system, bundling its static and realtime roles across catalogs.
+ * `search.json` is every feed cut down to what the list, the map and the
+ * search need; `feeds.json` is the same feeds in full. `sources.json` is the
+ * raw catalog layer a feed's `members` point into, and `status.json` carries
+ * each row's last check.
  *
  * `manifest.json` is fetched first and revalidated every time; every other
  * artifact is fetched with its manifest hash in the query string, so a browser
  * cache can only ever serve the bytes the manifest names.
  *
- * Loading comes in two stages: the core (`feeds.json`, `summary.json`) paints
- * the map, the list and the search; the detail (`sources.json`, `status.json`)
- * follows for member rows, Source pages and the search's catalog names.
+ * Loading comes in two stages: the core (`search.json`, `summary.json`)
+ * paints the map, the list and the search; the detail (`feeds.json`,
+ * `sources.json`, `status.json`) follows for the full feeds, member rows and
+ * Source pages.
  */
 
+import { parseSearchDocument } from 'interlocking/gtfs/feed-catalog';
 import { CONFIG } from '../config';
 
-export type Catalog = 'transitland' | 'mobilitydatabase' | 'curated';
+export type Catalog = 'transitland' | 'mobilitydatabase' | 'gtfszone';
 export type Kind = 'static' | 'rt';
-export type State = 'up' | 'down' | 'unknown';
-export type Role = 'scheduled' | 'vehicles' | 'trip_updates' | 'alerts';
+/** A feed's state: partial is a schedule that answers with a realtime role that does not. */
+export type State = 'up' | 'partial' | 'down' | 'unknown';
+/** A role's or a row's last check. */
+export type RoleState = 'up' | 'down' | 'unknown';
+/** `realtime` is an endpoint whose entity types its catalog does not declare. */
+export type Role = 'scheduled' | 'vehicles' | 'trip_updates' | 'alerts' | 'realtime';
 
-export const STATES: State[] = ['up', 'down', 'unknown'];
-export const ROLES: Role[] = ['scheduled', 'vehicles', 'trip_updates', 'alerts'];
-export const RT_ROLES: Role[] = ['vehicles', 'trip_updates', 'alerts'];
+export const STATES: State[] = ['up', 'partial', 'down', 'unknown'];
+export const ROLES: Role[] = ['scheduled', 'vehicles', 'trip_updates', 'alerts', 'realtime'];
+export const RT_ROLES: Role[] = ['vehicles', 'trip_updates', 'alerts', 'realtime'];
 
 /** Place keys shared by rows and feeds; absent rather than empty. */
 export interface Place {
@@ -51,14 +58,14 @@ export interface SourceRow extends Place {
   vehiclesUrl?: string;
   tripUpdatesUrl?: string;
   alertsUrl?: string;
+  realtimeUrl?: string;
   same_endpoint_as?: string[];
   /** Mobility Database lifecycle: active, deprecated, inactive, ... */
   feed_status?: string;
   /** Non-zero means the endpoint needs a key, so it is never checked. */
   auth?: number;
   license_url?: string;
-  note?: string;
-  state?: State;
+  state?: RoleState;
 }
 
 /** What the schedule's last download held, from cape-flier's content report. */
@@ -82,10 +89,17 @@ export interface FeedContent {
 export interface Feed extends Place {
   feedId: string;
   name: string;
-  /** `rowId`s of the catalog rows this feed bundles. */
+  /** What tells the feed apart from others of its name, e.g. "Rail". */
+  subtitle?: string;
+  /** Every other name the feed goes by: rows', operators', agencies'. From `search.json`. */
+  altNames: string[];
+  /** Municipality, subdivision, country; whichever are known. From `search.json`. */
+  place: string[];
+  countryCode?: string;
+  /** `rowId`s of the catalog rows this feed bundles. Empty until the detail is in. */
   members: string[];
   state: State;
-  roleState: Partial<Record<Role, State>>;
+  roleState: Partial<Record<Role, RoleState>>;
   /** Role to URLs, best first. The first is the one to load. */
   urls: Partial<Record<Role, string[]>>;
   /** Roles only reachable with a key. */
@@ -100,8 +114,11 @@ export interface Feed extends Place {
   content?: FeedContent;
 }
 
+/** A `feeds.json` entry: everything but what only `search.json` carries. */
+type FullFeed = Omit<Feed, 'altNames' | 'place' | 'countryCode'>;
+
 export interface StatusEntry {
-  state: State;
+  state: RoleState;
   code?: number;
   error?: string;
   /** Set when the endpoint answered somewhere other than where it was aimed. */
@@ -138,8 +155,9 @@ export interface CoreCatalogue {
   summary: Summary;
 }
 
-/** The catalog rows and their checks, fetched behind the core. */
+/** The full feeds, the catalog rows and their checks, fetched behind the core. */
 export interface DetailCatalogue {
+  feeds: FullFeed[];
   sources: SourceRow[];
   status: Record<string, StatusEntry>;
 }
@@ -238,30 +256,31 @@ async function fetchArtifacts(names: string[], onProgress?: ProgressHandler): Pr
 }
 
 /**
- * The feeds and the summary. `onProgress` only hears about a fetch this call
- * started.
+ * The searchable feeds and the summary. `onProgress` only hears about a fetch
+ * this call started.
  */
 export const loadCore = sessionCached(async (onProgress?: ProgressHandler): Promise<CoreCatalogue> => {
   const manifest = await loadManifest();
-  const [feeds, summary] = await fetchArtifacts(['feeds.json', 'summary.json'], onProgress);
+  const [search, summary] = await fetchArtifacts(['search.json', 'summary.json'], onProgress);
   return {
     generatedAt: manifest.generated_at,
-    feeds: (feeds as { feeds: Feed[] }).feeds,
+    feeds: parseSearchDocument(search).map((feed) => ({ ...feed, country_code: feed.countryCode, members: [] })),
     summary: summary as Summary,
   };
 });
 
-/** The catalog rows and their checks. */
+/** The full feeds, the catalog rows and their checks. */
 export const loadDetail = sessionCached(async (): Promise<DetailCatalogue> => {
-  const [sources, status] = await fetchArtifacts(['sources.json', 'status.json']);
+  const [feeds, sources, status] = await fetchArtifacts(['feeds.json', 'sources.json', 'status.json']);
   return {
+    feeds: (feeds as { feeds: FullFeed[] }).feeds,
     sources: (sources as { sources: SourceRow[] }).sources,
     status: (status as { sources: Record<string, StatusEntry> }).sources,
   };
 });
 
 /** A row's state, from the status document when it has one. */
-export function stateOf(row: SourceRow, status: Record<string, StatusEntry>): State {
+export function stateOf(row: SourceRow, status: Record<string, StatusEntry>): RoleState {
   return status[row.rowId]?.state ?? row.state ?? 'unknown';
 }
 
@@ -285,8 +304,8 @@ export function sortFeeds(feeds: Feed[]): Feed[] {
 
 /**
  * The loaded catalogue, keyed every way the pages look it up. Built from the
- * core; the rows and their checks arrive later through `attachDetail`, and
- * until then `row` finds nothing and `membersOf` is empty.
+ * core; the full feeds, the rows and their checks arrive later through
+ * `attachDetail`, and until then `row` finds nothing and `membersOf` is empty.
  */
 export class CatalogueIndex {
   readonly generatedAt: string;
@@ -304,11 +323,6 @@ export class CatalogueIndex {
     this.feeds = sortFeeds(data.feeds);
     this.summary = data.summary;
     this.feedById = new Map(this.feeds.map((feed) => [feed.feedId, feed]));
-    for (const feed of this.feeds) {
-      for (const member of feed.members) {
-        this.feedOfRow.set(member, feed);
-      }
-    }
   }
 
   /** Whether the rows and their checks are in. */
@@ -316,7 +330,18 @@ export class CatalogueIndex {
     return this.detail;
   }
 
+  /**
+   * Merge each full feed into the one already listed, in place, so the list,
+   * the map and the search keep holding the same objects.
+   */
   attachDetail(data: DetailCatalogue): void {
+    for (const full of data.feeds) {
+      const feed = this.feedById.get(full.feedId);
+      if (feed) {
+        Object.assign(feed, full);
+      }
+    }
+    this.feedOfRow = new Map(this.feeds.flatMap((feed) => feed.members.map((member) => [member, feed] as const)));
     this.rowById = new Map(data.sources.map((row) => [row.rowId, row]));
     this.status = data.status;
     this.detail = true;

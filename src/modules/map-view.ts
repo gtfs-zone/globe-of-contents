@@ -4,7 +4,7 @@
  *
  * Clusters are HTML markers rather than a symbol layer, because none of the
  * shared raster basemaps carries a glyphs URL and so a map layer cannot draw a
- * count. Each marker's ring is split by the cluster's up/down/inaccessible share,
+ * count. Each marker's ring is split by the cluster's up/partial/down/inaccessible share,
  * which is the zoomed-out view of the whole world's reachability.
  *
  * Unplaced feeds are not drawn at all. The Home list shows their count
@@ -23,6 +23,9 @@ import type {
 import type { Feature, FeatureCollection, Point, Polygon } from 'geojson';
 import { AutoZoom } from 'interlocking/map/auto-zoom';
 import { BasemapControl, initialMapStyle } from 'interlocking/map/basemap-control';
+import { fitPadding } from 'interlocking/map/fit-padding';
+import { SearchPlaceMarker } from 'interlocking/map/place-search';
+import type { PlacePayload } from 'interlocking/map/place-search';
 import type { MapAppearance } from 'interlocking/map/basemap-control';
 import { clearThemeColorCache, resolveThemeColor } from 'interlocking/util/theme-color';
 import { escapeHtml } from 'interlocking/util/escape-html';
@@ -81,6 +84,7 @@ export class GlobeMap {
   private onScreen = new Map<number, maplibregl.Marker>();
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
   private hover: maplibregl.Popup;
+  private placeMarker: SearchPlaceMarker;
 
   /** Fired by a click on the map that hits no feed. */
   onEmptyClick: (() => void) | null = null;
@@ -104,11 +108,15 @@ export class GlobeMap {
 
     this.autoZoom = new AutoZoom(() => this.focusSelected());
     this.hover = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8 });
+    this.placeMarker = new SearchPlaceMarker(this.map);
 
     this.resolveColors();
     this.map.once('load', () => this.installLayers());
     // setStyle drops every source and layer this class added.
-    this.map.on('basemap:changed', () => this.installLayers());
+    this.map.on('basemap:changed', () => {
+      this.installLayers();
+      this.placeMarker.redraw();
+    });
     this.map.on('render', () => this.updateClusterMarkers());
     this.map.on('moveend', () => this.queueViewSave());
 
@@ -173,6 +181,20 @@ export class GlobeMap {
     this.focusSelected();
   }
 
+  /** Ring a searched place and move there, whatever auto-zoom says. */
+  focusPlace(place: PlacePayload): void {
+    this.placeMarker.focus(place, fitPadding(this.map, 60));
+  }
+
+  clearPlace(): void {
+    this.placeMarker.clear();
+  }
+
+  /** Biases the place search towards what is on screen. */
+  getCenter(): { lng: number; lat: number } {
+    return this.map.getCenter();
+  }
+
   /**
    * Keep the camera's focus clear of the mobile sheet, which covers the
    * bottom `covered` pixels of the map.
@@ -205,6 +227,7 @@ export class GlobeMap {
   private resolveColors(): void {
     this.colors = {
       up: resolveThemeColor('--color-success', CONFIG.STATE_COLOR_FALLBACK.up),
+      partial: resolveThemeColor('--color-warning', CONFIG.STATE_COLOR_FALLBACK.partial),
       down: resolveThemeColor('--color-error', CONFIG.STATE_COLOR_FALLBACK.down),
       unknown: CONFIG.STATE_COLOR_FALLBACK.unknown,
     };
@@ -216,6 +239,8 @@ export class GlobeMap {
       ['get', 'state'],
       'up',
       this.colors.up,
+      'partial',
+      this.colors.partial,
       'down',
       this.colors.down,
       this.colors.unknown,
@@ -236,6 +261,7 @@ export class GlobeMap {
       clusterMaxZoom: CONFIG.CLUSTER_MAX_ZOOM,
       clusterProperties: {
         up: ['+', ['case', ['==', ['get', 'state'], 'up'], 1, 0]],
+        partial: ['+', ['case', ['==', ['get', 'state'], 'partial'], 1, 0]],
         down: ['+', ['case', ['==', ['get', 'state'], 'down'], 1, 0]],
       },
     });
@@ -353,9 +379,11 @@ export class GlobeMap {
   private clusterElement(id: number, lngLat: [number, number], props: Record<string, number>): HTMLElement {
     const total = props.point_count;
     const up = props.up ?? 0;
+    const partial = props.partial ?? 0;
     const down = props.down ?? 0;
     const upEnd = (up / total) * 360;
-    const downEnd = upEnd + (down / total) * 360;
+    const partialEnd = upEnd + (partial / total) * 360;
+    const downEnd = partialEnd + (down / total) * 360;
     const size = Math.round(26 + Math.min(Math.log10(total), 4) * 9);
 
     const el = document.createElement('button');
@@ -365,9 +393,10 @@ export class GlobeMap {
     el.style.height = `${size}px`;
     el.style.background =
       `conic-gradient(${this.colors.up} 0deg ${upEnd}deg, ` +
-      `${this.colors.down} ${upEnd}deg ${downEnd}deg, ` +
+      `${this.colors.partial} ${upEnd}deg ${partialEnd}deg, ` +
+      `${this.colors.down} ${partialEnd}deg ${downEnd}deg, ` +
       `${this.colors.unknown} ${downEnd}deg 360deg)`;
-    el.title = `${total} feeds: ${up} up, ${down} down, ${total - up - down} inaccessible`;
+    el.title = `${total} feeds: ${up} up, ${partial} partial, ${down} down, ${total - up - partial - down} inaccessible`;
     el.innerHTML = `<span>${abbreviate(total)}</span>`;
     el.addEventListener('click', (event) => {
       event.stopPropagation();

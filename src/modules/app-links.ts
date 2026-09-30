@@ -3,6 +3,7 @@
  * a role, which geometry-car orders best first.
  */
 
+import { realtimeSlots } from 'interlocking/gtfs/feed-catalog';
 import { CONFIG } from '../config';
 import type { Feed } from '../data/artifacts';
 import { hasRealtime } from '../data/artifacts';
@@ -16,7 +17,8 @@ export function editorUrl(feed: Feed): string | null {
 /**
  * The visualizer draws realtime against a schedule, so it needs both. Without
  * a `cors` key it proxies both halves, which is the right guess for a catalog
- * URL.
+ * URL. An endpoint of undeclared type takes the first empty slot, as in
+ * geometry-car's viewer link.
  */
 export function viewerUrl(feed: Feed): string | null {
   const scheduled = feed.urls.scheduled?.[0];
@@ -24,11 +26,9 @@ export function viewerUrl(feed: Feed): string | null {
     return null;
   }
   const params = new URLSearchParams({ scheduled });
-  const vehicles = feed.urls.vehicles?.[0];
-  const tripUpdates = feed.urls.trip_updates?.[0];
-  const alerts = feed.urls.alerts?.[0];
-  if (vehicles) params.set('rt_vp', vehicles);
-  if (tripUpdates) params.set('rt_tu', tripUpdates);
-  if (alerts) params.set('rt_al', alerts);
+  const slots = realtimeSlots(feed);
+  if (slots.vehiclesUrl) params.set('rt_vp', slots.vehiclesUrl);
+  if (slots.tripUpdatesUrl) params.set('rt_tu', slots.tripUpdatesUrl);
+  if (slots.alertsUrl) params.set('rt_al', slots.alertsUrl);
   return `${CONFIG.VIEWER_BASE}/#${params.toString()}`;
 }

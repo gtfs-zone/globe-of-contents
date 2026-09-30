@@ -3,13 +3,16 @@
  * and the search box so the same feed never reads two different ways.
  */
 
+import { FEED_STATE_LABELS, ROLE_LABELS as FEED_ROLE_LABELS } from 'interlocking/gtfs/feed-catalog';
 import { CONFIG } from '../config';
-import type { Feed, FeedContent, Place, Role, SourceRow, State, StatusEntry } from '../data/artifacts';
+import type { Feed, FeedContent, Place, Role, RoleState, SourceRow, State, StatusEntry } from '../data/artifacts';
+
+export { placeLine as feedPlaceLine } from 'interlocking/gtfs/feed-catalog';
 
 export const CATALOG_LABELS: Record<string, string> = {
   transitland: 'Transitland',
   mobilitydatabase: 'Mobility Database',
-  curated: 'Curated',
+  gtfszone: 'rt.gtfs.zone',
 };
 
 export const KIND_LABELS: Record<string, string> = {
@@ -17,21 +20,13 @@ export const KIND_LABELS: Record<string, string> = {
   rt: 'Realtime',
 };
 
-export const ROLE_LABELS: Record<Role, string> = {
-  scheduled: 'Schedule',
-  vehicles: 'Vehicle positions',
-  trip_updates: 'Trip updates',
-  alerts: 'Service alerts',
-};
-
-export const STATE_LABELS: Record<State, string> = {
-  up: 'Up',
-  down: 'Down',
-  unknown: 'Inaccessible',
-};
+// interlocking's words, so a feed reads the same in the editor and the viewer.
+export const ROLE_LABELS: Record<Role, string> = FEED_ROLE_LABELS;
+export const STATE_LABELS: Record<State, string> = FEED_STATE_LABELS;
 
 export const STATE_BADGE: Record<State, string> = {
   up: 'badge-success',
+  partial: 'badge-warning',
   down: 'badge-error',
   unknown: 'badge-ghost',
 };
@@ -64,6 +59,7 @@ export function contentLine(content: FeedContent): string {
 /** Hover text for the Feed and Source pages' field labels. */
 export const FIELD_HINTS: Record<string, string> = {
   Place: 'Where the catalog places this feed. Only the Mobility Database carries coordinates.',
+  'Also known as': "Other names for this feed: its catalog entries', its operators' and the agencies in its schedule.",
   'Schedule size': "The schedule zip's size, from the Content-Length header of the last check.",
   'Last modified': "The schedule's Last-Modified header from the last check.",
   'Schedule contents':
@@ -128,12 +124,9 @@ export function formatBytes(n: number): string {
 }
 
 /** Why a row reads the way it does, in a few words. */
-export function statusLine(row: SourceRow, state: State, entry: StatusEntry | undefined): string {
+export function statusLine(row: SourceRow, state: RoleState, entry: StatusEntry | undefined): string {
   if (state === 'unknown') {
-    if (row.auth) {
-      return 'needs an API key';
-    }
-    return row.catalog === 'curated' ? 'resolves per app' : '';
+    return row.auth ? 'needs an API key' : '';
   }
   if (state === 'up') {
     return entry?.latency_ms !== undefined ? `${entry.latency_ms} ms` : '';
@@ -147,15 +140,18 @@ export function statusLine(row: SourceRow, state: State, entry: StatusEntry | un
   }
   // `since` on a down row is when it went down; it has not answered since then.
   if (entry?.since) {
-    parts.push(`never reached since ${formatDate(entry.since)}`);
+    parts.push(`down since ${formatDate(entry.since)}`);
   }
   return parts.join(', ');
 }
 
-/** A feed's state in a few words: when it went down, or why it is inaccessible. */
+/** A feed's state in a few words: since when it is down or partial, or why it is inaccessible. */
 export function feedStatusLine(feed: Feed): string {
   if (feed.state === 'down') {
-    return feed.since ? `never reached since ${formatDate(feed.since)}` : 'not answering';
+    return feed.since ? `down since ${formatDate(feed.since)}` : 'not answering';
+  }
+  if (feed.state === 'partial') {
+    return feed.since ? `partial since ${formatDate(feed.since)}` : 'some realtime is not answering';
   }
   if (feed.state === 'unknown') {
     return feed.auth?.length ? 'needs an API key' : '';

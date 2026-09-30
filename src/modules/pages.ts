@@ -8,15 +8,16 @@
  * delegates both.
  */
 
+import { feedStateBadge, roleChip, roleChips } from 'interlocking/gtfs/feed-badges';
 import type { BreadcrumbItem } from 'interlocking/ui/breadcrumb-trail';
 import { TOOLTIP_TRIGGER_CLASS, renderTooltipTrigger, tooltipContentAttr } from 'interlocking/ui/field-label';
 import { escapeHtml } from 'interlocking/util/escape-html';
 import { CONFIG } from '../config';
-import type { CatalogueIndex, Feed, Role, SourceRow, State } from '../data/artifacts';
-import { ROLES, RT_ROLES, STATES, stateOf } from '../data/artifacts';
+import type { CatalogueIndex, Feed, Role, RoleState, SourceRow, State } from '../data/artifacts';
+import { ROLES, STATES, stateOf } from '../data/artifacts';
 import type { PageState } from '../types/page-state';
 import { editorUrl, viewerUrl } from './app-links';
-import type { Filters } from './filters';
+import type { Filters, Near } from './filters';
 import {
   CATALOG_LABELS,
   FIELD_HINTS,
@@ -26,6 +27,7 @@ import {
   STATE_BADGE,
   STATE_LABELS,
   catalogUrl,
+  feedPlaceLine,
   feedStatusLine,
   formatBytes,
   formatCount,
@@ -42,6 +44,8 @@ export interface PageContext {
   href: (state: PageState) => string;
   /** Whether fetching the rows and their checks failed. */
   detailFailed: boolean;
+  /** The picked place Home is sorted by distance from. */
+  near: Near | null;
 }
 
 const HOME: PageState = { type: 'home' };
@@ -51,6 +55,7 @@ const ROW_URL_FIELDS: [keyof SourceRow, Role][] = [
   ['vehiclesUrl', 'vehicles'],
   ['tripUpdatesUrl', 'trip_updates'],
   ['alertsUrl', 'alerts'],
+  ['realtimeUrl', 'realtime'],
 ];
 
 // ─── Breadcrumbs ──────────────────────────────────────────────────────────────
@@ -101,7 +106,7 @@ function navLink(ctx: PageContext, state: PageState, inner: string, cls: string)
   return `<a href="${escapeHtml(ctx.href(state))}" data-nav="${escapeHtml(JSON.stringify(state))}" class="${cls}">${inner}</a>`;
 }
 
-function stateBadge(state: State, size = ''): string {
+function stateBadge(state: State | RoleState, size = ''): string {
   return `<span class="badge ${size} ${STATE_BADGE[state]}">${STATE_LABELS[state]}</span>`;
 }
 
@@ -153,6 +158,21 @@ function unplacedNote(): string {
 
 // ─── Home ─────────────────────────────────────────────────────────────────────
 
+const STATE_TEXT: Record<State, string> = {
+  up: 'text-success',
+  partial: 'text-warning',
+  down: 'text-error',
+  unknown: 'opacity-60',
+};
+
+// The status line under a feed's name: only a problem is coloured.
+const LINE_CLASS: Record<State, string> = {
+  up: 'opacity-60',
+  partial: 'text-warning',
+  down: 'text-error',
+  unknown: 'opacity-60',
+};
+
 function renderStats(ctx: PageContext): string {
   const { feeds } = ctx.index.summary;
   const only = ctx.filters.status.length === 1 ? ctx.filters.status[0] : null;
@@ -170,7 +190,7 @@ function renderStats(ctx: PageContext): string {
     <div class="stats stats-horizontal bg-base-200 w-full text-center">
       ${stat('Feeds', feeds.total, '', '')}
       ${STATES.map((state) =>
-        stat(STATE_LABELS[state], feeds.by_state[state] ?? 0, state === 'up' ? 'text-success' : state === 'down' ? 'text-error' : 'opacity-60', state)
+        stat(STATE_LABELS[state], feeds.by_state[state] ?? 0, STATE_TEXT[state], state)
       ).join('')}
     </div>
     <label class="flex items-center gap-2 text-xs cursor-pointer">
@@ -179,20 +199,10 @@ function renderStats(ctx: PageContext): string {
     </label>`;
 }
 
-function roleChips(feed: Feed): string {
-  const chips: string[] = [];
-  if (feed.urls.scheduled?.length) {
-    chips.push('<span class="badge badge-xs badge-primary badge-soft">Schedule</span>');
-  }
-  if (RT_ROLES.some((role) => feed.urls[role]?.length)) {
-    chips.push('<span class="badge badge-xs badge-secondary badge-soft">Realtime</span>');
-  }
-  return chips.join('');
-}
-
 function renderFeedRow(ctx: PageContext, feed: Feed): string {
-  const place = placeLine(feed);
+  const place = [feed.subtitle, feedPlaceLine(feed)].filter(Boolean).join(', ');
   const line = feedStatusLine(feed);
+  const count = feed.members.length;
   const inner = `
     <span class="badge badge-xs ${STATE_BADGE[feed.state]} mt-1.5 shrink-0" title="${STATE_LABELS[feed.state]}"></span>
     <span class="min-w-0 flex-1">
@@ -201,11 +211,11 @@ function renderFeedRow(ctx: PageContext, feed: Feed): string {
         ${feed.lat === undefined ? '<span class="badge badge-outline badge-xs shrink-0" title="No coordinates">unplaced</span>' : ''}
       </span>
       ${place ? `<span class="block truncate text-xs opacity-70">${escapeHtml(place)}</span>` : ''}
-      ${line ? `<span class="block truncate text-xs ${feed.state === 'down' ? 'text-error' : 'opacity-60'}">${escapeHtml(line)}</span>` : ''}
+      ${line ? `<span class="block truncate text-xs ${LINE_CLASS[feed.state]}">${escapeHtml(line)}</span>` : ''}
     </span>
     <span class="flex flex-col items-end gap-1 shrink-0">
       <span class="flex gap-1">${roleChips(feed)}</span>
-      <span class="text-[10px] uppercase opacity-60">${feed.members.length} ${feed.members.length === 1 ? 'source' : 'sources'}</span>
+      ${ctx.index.hasDetail ? `<span class="text-[10px] uppercase opacity-60">${count} ${count === 1 ? 'source' : 'sources'}</span>` : ''}
     </span>`;
   return navLink(
     ctx,
@@ -224,7 +234,8 @@ function renderHome(ctx: PageContext): string {
   const count =
     `<span class="font-semibold">${formatCount(feeds.length)}</span> matching` +
     (hidden > 0 ? `, first ${formatCount(shown.length)} shown` : '') +
-    (feeds.length > 1 && !ctx.filters.q.trim() ? ', newest schedule first' : '') +
+    (feeds.length > 1 && !ctx.near && !ctx.filters.q.trim() ? ', newest schedule first' : '') +
+    (feeds.length > 1 && ctx.near ? ', nearest first' : '') +
     (unplaced > 0
       ? ` <span class="opacity-60">(${formatCount(unplaced)} have no coordinates and are not on the map)</span>`
       : '');
@@ -237,8 +248,15 @@ function renderHome(ctx: PageContext): string {
           ? `<p class="text-xs text-center opacity-60 py-2">${formatCount(hidden)} more; narrow the search to see them</p>`
           : '');
 
+  const near = ctx.near
+    ? `<div><button type="button" class="badge badge-outline gap-1" data-action="clear-near" title="Stop sorting by distance">
+         <span aria-hidden="true">x</span> Near ${escapeHtml(ctx.near.name)}
+       </button></div>`
+    : '';
+
   return `
     ${renderStats(ctx)}
+    ${near}
     <div class="text-xs">${count}</div>
     ${list}`;
 }
@@ -268,15 +286,26 @@ function renderRole(feed: Feed, role: Role): string {
     </div>`;
 }
 
+/** A realtime row's roles, one chip per URL it lists, in its row's state. */
+function rowRoleChips(row: SourceRow, state: RoleState): string {
+  return ROW_URL_FIELDS.filter(([key, role]) => role !== 'scheduled' && row[key])
+    .map(([, role]) => roleChip(role, state, 'sm'))
+    .join('');
+}
+
 function renderMember(ctx: PageContext, row: SourceRow): string {
   const state = stateOf(row, ctx.index.status);
+  const kind =
+    row.kind === 'rt'
+      ? `<span class="flex gap-1 shrink-0">${rowRoleChips(row, state)}</span>`
+      : `<span class="badge badge-sm badge-primary badge-soft shrink-0">${KIND_LABELS[row.kind]}</span>`;
   const inner = `
     <span class="badge badge-xs ${STATE_BADGE[state]} mt-1.5 shrink-0" title="${STATE_LABELS[state]}"></span>
     <span class="min-w-0 flex-1">
       <span class="block truncate text-sm">${escapeHtml(row.name || row.feedId)}</span>
       <span class="block truncate text-xs opacity-60">${escapeHtml(CATALOG_LABELS[row.catalog] ?? row.catalog)} <code>${escapeHtml(row.feedId)}</code></span>
     </span>
-    <span class="badge badge-sm ${row.kind === 'rt' ? 'badge-secondary' : 'badge-primary'} badge-soft shrink-0">${KIND_LABELS[row.kind]}</span>`;
+    ${kind}`;
   return navLink(
     ctx,
     { type: 'source', source: row.rowId },
@@ -289,10 +318,12 @@ function renderFeed(ctx: PageContext, feed: Feed): string {
   const edit = editorUrl(feed);
   const view = viewerUrl(feed);
   const line = feedStatusLine(feed);
-  const place = placeLine(feed);
+  const place = feedPlaceLine(feed);
   const roles = ROLES.filter((role) => feed.urls[role]?.length);
   const members = ctx.index.membersOf(feed);
-  const sourceCount = ctx.index.hasDetail ? members.length : feed.members.length;
+  const sources = ctx.index.hasDetail
+    ? `${members.length} catalog ${members.length === 1 ? 'source' : 'sources'}`
+    : 'Catalog sources';
   const content = feed.content;
   const contentBad = content !== undefined && content.state !== 'ok';
 
@@ -306,9 +337,11 @@ function renderFeed(ctx: PageContext, feed: Feed): string {
   ].join('');
 
   return `
+    ${feed.subtitle ? `<p class="text-sm opacity-70">${escapeHtml(feed.subtitle)}</p>` : ''}
     <div class="flex flex-wrap items-center gap-2">
-      ${stateBadge(feed.state)}
-      ${line ? `<span class="text-sm ${feed.state === 'down' ? 'text-error' : 'opacity-70'}">${escapeHtml(line)}</span>` : ''}
+      ${feedStateBadge(feed.state, feed.since, 'md')}
+      ${roleChips(feed, 'sm')}
+      ${line ? `<span class="text-sm ${LINE_CLASS[feed.state]}">${escapeHtml(line)}</span>` : ''}
       ${feed.state === 'up' && feed.since ? `<span class="text-sm opacity-70">up since ${formatDate(feed.since)}</span>` : ''}
       ${contentBad ? `<span class="badge badge-warning">${escapeHtml(contentLine(content))}</span>` : ''}
     </div>
@@ -316,6 +349,7 @@ function renderFeed(ctx: PageContext, feed: Feed): string {
     <table class="table table-sm">
       <tbody>
         ${field('Place', place ? escapeHtml(place) : unplacedNote())}
+        ${field('Also known as', escapeHtml(feed.altNames.join(', ')))}
         ${field('Schedule size', feed.staticBytes !== undefined ? formatBytes(feed.staticBytes) : '')}
         ${field('Last modified', formatDate(feed.lastModified))}
         ${content ? field('Schedule contents', `${escapeHtml(contentLine(content))}, since ${formatDate(content.since)}`) : ''}
@@ -332,7 +366,7 @@ function renderFeed(ctx: PageContext, feed: Feed): string {
     </section>
     <section>
       <h3 class="text-xs uppercase tracking-wide opacity-50 mb-1">
-        ${sourceCount} catalog ${sourceCount === 1 ? 'source' : 'sources'} (${guideLink('merging', 'how feeds are merged')})
+        ${sources} (${guideLink('merging', 'how feeds are merged')})
       </h3>
       ${
         ctx.index.hasDetail
@@ -387,9 +421,9 @@ function renderSource(ctx: PageContext, row: SourceRow): string {
       ${stateBadge(state)}
       <span class="badge badge-outline">${KIND_LABELS[row.kind]}</span>
       ${catalogBadge(row)}
+      ${row.kind === 'rt' ? rowRoleChips(row, state) : ''}
       ${line ? `<span class="text-sm ${state === 'down' ? 'text-error' : 'opacity-70'}">${escapeHtml(line)}</span>` : ''}
     </div>
-    ${row.note ? `<div class="alert alert-info alert-soft text-sm whitespace-pre-line">${escapeHtml(row.note)}</div>` : ''}
     <table class="table table-sm">
       <tbody>
         ${field('Operator', escapeHtml(row.operator_name))}

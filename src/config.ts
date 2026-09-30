@@ -39,6 +39,7 @@ export const CONFIG = Object.freeze({
   // resolved. The live values come from the daisyUI palette.
   STATE_COLOR_FALLBACK: {
     up: '#22c55e',
+    partial: '#f59e0b',
     down: '#ef4444',
     unknown: '#94a3b8',
   },

@@ -24,9 +24,10 @@ src/boot-path.ts           rewrites a crawlable /feed/<id>/<slug> URL to #feed=<
 src/shell.ts               mounts interlocking's app shell and sets up its search box
 src/config.ts              every magic number and URL, one frozen CONFIG
 src/data/artifacts.ts      artifact types (mirroring geometry-car's artifacts.py), the fetch, CatalogueIndex
+                           (first paint is search.json; feeds.json, sources.json and status.json follow)
 src/types/page-state.ts    home | feed | source, and their hash codec
 src/modules/app-state.ts   FocusController: page half of the hash, filter half replaced in place
-src/modules/filters.ts     filter state, URL hash, localStorage, uFuzzy matching over feeds
+src/modules/filters.ts     filter state, URL hash, localStorage, interlocking's FeedMatcher, near-place sort
 src/modules/pages.ts       the sidebar's Home, Feed and Source pages and their breadcrumbs
 src/modules/map-view.ts    MapLibre, clustered source, HTML cluster markers
 src/modules/help-pages.ts  the Guide's pages
@@ -48,16 +49,25 @@ src/modules/help-pages.ts  the Guide's pages
 - **Unplaced feeds are counted, never hidden.** Much of the corpus has no
   coordinates. The Home list says how many of the feeds it lists are not on
   the map.
-- **Feeds, not rows.** The list, the map and the search are over `feeds.json`.
+- **First paint is `search.json`.** The list, the map and the search paint from
+  it; `feeds.json` (members, content, bbox), `sources.json` and `status.json`
+  load behind it, and `CatalogueIndex.attachDetail` merges each full feed into
+  the object already listed. Anything reading `members` checks `hasDetail`.
+- **Feeds, not rows.** The list, the map and the search are over the feeds.
   `sources.json` rows only appear as a feed's members and on their own Source
   page; the feed-to-row grouping is geometry-car's, never recomputed here.
 - **Every focus change goes through `appState.setFocus`:** list links, map
   clicks, search picks and breadcrumbs alike. The sidebar and the camera react
   to `onFocusChange`, not to each other.
+- **Shared wording and search.** Feed states, role labels, role chips and the
+  text matching come from interlocking's `gtfs/feed-catalog`, `gtfs/feed-badges`
+  and `gtfs/feed-search`, so a feed reads and is found the same way in the
+  editor and the viewer.
 - **State split:** filters (`q`, `status`, `rt`) go in Home's URL hash, and a
   Feed or Source hash carries only the page (`feed=` or `source=`); map view, basemap
   and last filters go in localStorage under `gc.`-prefixed keys. The `theme` key stays un-prefixed and shared, so
-  the moon toggle agrees across every gtfs.zone site.
+  the moon toggle agrees across every gtfs.zone site. A picked place's `near`
+  sort is in memory only.
 - Cluster counts are HTML markers, not a symbol layer: the shared raster
   basemaps have no `glyphs` URL, so a map layer cannot draw text.
 - Do NOT use Playwright (or any browser automation) to verify changes. The user

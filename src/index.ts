@@ -3,6 +3,8 @@ import './boot-path';
 // Mounts the shell markup; must stay the first import after boot-path.
 import './shell';
 import { renderAutoZoomControl, syncAutoZoomControl, wireAutoZoomControl } from 'interlocking/map/auto-zoom';
+import { searchPlaces } from 'interlocking/map/place-search';
+import type { PlacePayload } from 'interlocking/map/place-search';
 import { BottomSheetController } from 'interlocking/ui/bottom-sheet';
 import { pageTitle } from 'interlocking/ui/breadcrumb-trail';
 import { setHelpPages, showHelpModal } from 'interlocking/ui/help-modal';
@@ -19,14 +21,15 @@ import { CONFIG } from './config';
 import type { CoreCatalogue, DetailCatalogue, Feed, State } from './data/artifacts';
 import { CatalogueIndex, loadCore, loadDetail } from './data/artifacts';
 import { AppState } from './modules/app-state';
-import type { Filters } from './modules/filters';
-import { FeedFilter, buildHaystack, filterParams, readFilters, saveFilters, sameFilters } from './modules/filters';
+import type { Filters, Near } from './modules/filters';
+import { FeedFilter, filterParams, readFilters, saveFilters, sameFilters } from './modules/filters';
 import { HELP_GROUP_ORDER, HELP_PAGES, setHelpVersion } from './modules/help-pages';
 import { formatBytes, formatDate } from './modules/labels';
 import { GlobeMap } from './modules/map-view';
 import { DOCK_ICONS, NAVBAR_ACTIONS } from './modules/navbar-action-list';
 import { placeFor, renderPage, validateState } from './modules/pages';
 import { SearchEntries } from './modules/search-entries';
+import type { SearchPayload } from './modules/search-entries';
 import type { PageState } from './types/page-state';
 import { pageFromParams } from './types/page-state';
 
@@ -76,6 +79,8 @@ let feedFilter: FeedFilter | null = null;
 let searchEntries: SearchEntries | null = null;
 let filters: Filters = readFilters(window.location.hash.slice(1), true);
 let filtered: Feed[] = [];
+// A picked place Home is sorted by distance from; kept out of the hash.
+let near: Near | null = null;
 let detailFailed = false;
 // Settles, never rejects, once the current detail fetch lands or fails.
 let detailSettled: Promise<void> = Promise.resolve();
@@ -85,7 +90,7 @@ const panel = new PanelHost<PageState>(panelContent, {
   navigate: (state) => appState.setFocus(state),
   href: (state) => appState.hrefFor(state),
   renderPage: (state) =>
-    index ? renderPage({ index, filtered, filters, href: (s) => appState.hrefFor(s), detailFailed }, state) : '',
+    index ? renderPage({ index, filtered, filters, href: (s) => appState.hrefFor(s), detailFailed, near }, state) : '',
   action: (action, arg) => {
     if (action === 'guide') {
       void showHelpModal(arg || undefined);
@@ -95,6 +100,10 @@ const panel = new PanelHost<PageState>(panelContent, {
       setFilters({ rt: !filters.rt });
     } else if (action === 'detail-retry') {
       startDetail();
+    } else if (action === 'clear-near') {
+      near = null;
+      map.clearPlace();
+      applyFilters();
     }
   },
 });
@@ -135,7 +144,7 @@ function applyFilters(): void {
   if (!feedFilter) {
     return;
   }
-  filtered = feedFilter.apply(filters);
+  filtered = feedFilter.apply(filters, near);
   map.setFeeds(filtered);
   const focus = appState.focus;
   if (focus.type === 'home') {
@@ -181,10 +190,22 @@ window.addEventListener('hashchange', () => {
 
 syncControls();
 
-// Picking a result is the same event as clicking the feed on the map.
-const searchController = new SearchController<string>({
+/** Ring the place, and list Home's feeds nearest it first. */
+function pickPlace(place: PlacePayload): void {
+  map.focusPlace(place);
+  near = { name: place.name, lon: place.lon, lat: place.lat };
+  applyFilters();
+  if (appState.focus.type !== 'home') {
+    appState.setFocus({ type: 'home' });
+  }
+}
+
+// Picking a feed is the same event as clicking it on the map.
+const searchController = new SearchController<SearchPayload>({
   getEntries: () => searchEntries?.build(filters) ?? [],
-  onSelect: (feedId) => appState.setFocus({ type: 'feed', feed: feedId }),
+  getRemoteEntries: (query, signal) => searchPlaces(query, map.getCenter(), signal),
+  onSelect: (payload) =>
+    payload.kind === 'feed' ? appState.setFocus({ type: 'feed', feed: payload.feedId }) : pickPlace(payload),
   limit: CONFIG.SEARCH_LIMIT,
 });
 searchController.initialize();
@@ -192,13 +213,6 @@ searchController.initialize();
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 
 const pending = appState.pages.pendingStateFromURL();
-
-/** The list's filter and the search box's entries, over the index as it stands. */
-function buildSearch(): void {
-  const haystack = buildHaystack(index!);
-  feedFilter = new FeedFilter(index!, haystack);
-  searchEntries = new SearchEntries(index!, haystack);
-}
 
 /** Re-render a Feed or Source page in place, keeping its scroll. */
 function refreshPanel(): void {
@@ -209,12 +223,13 @@ function refreshPanel(): void {
 
 function start(data: CoreCatalogue): void {
   index = new CatalogueIndex(data);
-  buildSearch();
+  feedFilter = new FeedFilter(index.feeds);
+  searchEntries = new SearchEntries(index.feeds);
   appState.setIndex(index, () => detailSettled);
 
   document.getElementById('generated-at')!.textContent = `Checked ${formatDate(data.generatedAt)}`;
 
-  filtered = feedFilter!.apply(filters);
+  filtered = feedFilter.apply(filters, near);
   map.setFeeds(filtered);
 
   // A Source link is adopted as-is; `onDetail` checks it once the rows are in.
@@ -231,13 +246,13 @@ function start(data: CoreCatalogue): void {
 
 function onDetail(data: DetailCatalogue): void {
   index!.attachDetail(data);
-  // Member rows add catalog names and operators to the haystack.
-  buildSearch();
-  if (filters.q.trim()) {
-    applyFilters();
-  }
 
   const focus = appState.focus;
+  if (focus.type === 'home') {
+    // Member counts on each row.
+    panel.show(focus, appState.breadcrumbs);
+    return;
+  }
   if (focus.type === 'source') {
     if (!index!.row(focus.source)) {
       notify.warning('Nothing in this catalogue matches the linked source');
@@ -250,6 +265,8 @@ function onDetail(data: DetailCatalogue): void {
     return;
   }
   refreshPanel();
+  // The feed's bounding box came with its full entry.
+  map.select(placeFor(index!, focus));
 }
 
 /** Fetch the rows and their checks behind the painted map. */
