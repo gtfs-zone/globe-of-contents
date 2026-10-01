@@ -21,7 +21,7 @@
 import { parseSearchDocument } from 'gtfs-zone-web-common/gtfs/feed-catalog';
 import { CONFIG } from '../config';
 
-export type Catalog = 'transitland' | 'mobilitydatabase' | 'gtfszone';
+export type Catalog = 'transitland' | 'mobilitydatabase' | 'gtfszone' | 'ntd';
 export type Kind = 'static' | 'rt';
 /** A feed's state: partial is a schedule that answers with a realtime role that does not. */
 export type State = 'up' | 'partial' | 'down' | 'unknown';

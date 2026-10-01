@@ -25,6 +25,7 @@ export const CATALOG_LABELS: Record<string, string> = {
   transitland: 'Transitland',
   mobilitydatabase: 'Mobility Database',
   gtfszone: 'rt.gtfs.zone',
+  ntd: 'National Transit Database',
 };
 
 export const KIND_LABELS: Record<string, string> = {

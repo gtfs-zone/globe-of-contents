@@ -182,11 +182,12 @@ const sourcesPage: HelpPage = {
   title: 'Where the data comes from',
   render: () =>
     [
-      lede('Three catalogs, refreshed daily by gtfs-zone-feed-catalog:'),
+      lede('Four catalogs, refreshed daily by gtfs-zone-feed-catalog:'),
       `<ul class="list-disc list-inside space-y-1 text-sm">
         <li>${renderExternalLink('https://github.com/transitland/transitland-atlas', 'Transitland Atlas')}: the open DMFR corpus, ${renderExternalLink('https://creativecommons.org/licenses/by/4.0/', 'CC BY 4.0')}</li>
         <li>${renderExternalLink('https://mobilitydatabase.org', 'Mobility Database')}: MobilityData's catalog, with places, ${renderExternalLink('https://creativecommons.org/publicdomain/zero/1.0/', 'CC0')}</li>
         <li>${renderExternalLink('https://rt.gtfs.zone/feeds', 'rt.gtfs.zone')}: the realtime feeds gtfs.zone serves itself, such as Amtrak</li>
+        <li>${renderExternalLink('https://data.transportation.gov/d/2u7n-ub22', 'National Transit Database')}: the GTFS weblinks US transit agencies report to the FTA, public domain</li>
       </ul>`,
       lede(
         `Everything this page shows is published as JSON at ${renderExternalLink('https://data.gtfs.zone/manifest.json', 'data.gtfs.zone')}: <code>search.json</code> for the merged feeds in brief, <code>feeds.json</code> for them in full, <code>sources.json</code> for the catalog entries and <code>status.json</code> for each check.`
