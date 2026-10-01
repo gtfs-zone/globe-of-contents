@@ -54,4 +54,4 @@ CI builds on the tag, pushes the image to ghcr.io and records its digest in
 
 ## License
 
-AGPL-3.0, see `LICENSE.txt`.
+AGPL-3.0-or-later, see `LICENSE.txt`.
