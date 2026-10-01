@@ -1,6 +1,0 @@
-#!/bin/sh
-# Typecheck blocks a commit; it is the same gate CI runs before a build.
-#
-# Enable with: git config core.hooksPath .githooks
-set -e
-pnpm typecheck

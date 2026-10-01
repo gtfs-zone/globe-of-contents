@@ -14,8 +14,6 @@ pnpm install
 pnpm dev          # vite on :8080, reading https://data.gtfs.zone
 pnpm typecheck
 pnpm build
-
-git config core.hooksPath .githooks   # once per clone; typecheck on commit
 ```
 
 `VITE_DATA_BASE=<url> pnpm dev` points the dev server at another copy of the
