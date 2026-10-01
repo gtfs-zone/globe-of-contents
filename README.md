@@ -47,11 +47,10 @@ artifacts. Production always reads `https://data.gtfs.zone`.
 ```bash
 cz bump        # on main; tags vX.Y.Z
 git push origin main --tags
-git push github main --tags
 ```
 
-CI builds on the tag, pushes the image by digest and records that digest in
-`deploy-gtfs-rt/sites/kustomization.yaml`; ArgoCD rolls it out.
+CI builds on the tag, pushes the image to ghcr.io and records its digest in
+`gtfs-zone-infra/sites/kustomization.yaml`; ArgoCD rolls it out.
 
 ## License
 

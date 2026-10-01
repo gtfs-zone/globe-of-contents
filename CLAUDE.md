@@ -87,9 +87,9 @@ server: Vite does not watch `node_modules`, and `util/module-state` logs
 
 ## Releasing
 
-`cz bump` on main, then push commits and tags to **both** remotes (`origin` on
-git.kcfam.us, `github`). The tag triggers `.forgejo/workflows/build.yml`, which
-builds, pushes by digest and commits the digest into `deploy-gtfs-rt/sites`.
+`cz bump` on main, then `git push origin main --tags`. The tag triggers
+`.github/workflows/build.yml`, which builds, pushes the image to ghcr.io and
+commits its digest into `gtfs-zone-infra/sites`.
 
 ## Related Repos
 
