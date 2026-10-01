@@ -9,7 +9,9 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "vuln": "sh scripts/vuln-gate.sh"
+    "check": "pnpm run typecheck",
+    "vuln": "sh scripts/vuln-gate.sh",
+    "commit": "cz commit"
   },
   "keywords": [
     "gtfs",
