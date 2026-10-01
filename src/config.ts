@@ -3,10 +3,10 @@
  * All magic numbers and URLs live here; import CONFIG rather than inlining literals.
  */
 export const CONFIG = Object.freeze({
-  // Where geometry-car publishes. Always a different origin from this app: the
+  // Where gtfs-zone-feed-catalog publishes. Always a different origin from this app: the
   // artifacts refresh daily, and this origin's nginx caches `.json` as
   // immutable for a year. Dev reads the public bucket too, since the local
-  // Garage in music-student has no web endpoint; VITE_DATA_BASE points it at
+  // Garage in gtfs-zone-dev-stack has no web endpoint; VITE_DATA_BASE points it at
   // anything else serving the same files.
   DATA_BASE: import.meta.env.DEV
     ? (import.meta.env.VITE_DATA_BASE ?? 'https://data.gtfs.zone')
@@ -54,7 +54,7 @@ export const CONFIG = Object.freeze({
   MAP_VIEW_SAVE_DEBOUNCE: 400,
 
   // Sibling apps a feed can be opened in. Hardcoded to prod on purpose, as in
-  // test-track: a shared link should always land on the stable public app.
+  // gtfs-zone-rt-viewer: a shared link should always land on the stable public app.
   EDITOR_BASE: 'https://edit.gtfs.zone',
   VIEWER_BASE: 'https://viz.rt.gtfs.zone',
 

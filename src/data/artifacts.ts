@@ -1,7 +1,7 @@
 /**
- * The artifacts geometry-car publishes, and the one way to fetch them.
+ * The artifacts gtfs-zone-feed-catalog publishes, and the one way to fetch them.
  *
- * Field names mirror geometry-car's `artifacts.py`. A feed is one logical
+ * Field names mirror gtfs-zone-feed-catalog's `artifacts.py`. A feed is one logical
  * transit system, bundling its static and realtime roles across catalogs.
  * `search.json` is every feed cut down to what the list, the map and the
  * search need; `feeds.json` is the same feeds in full. `sources.json` is the
@@ -68,7 +68,7 @@ export interface SourceRow extends Place {
   state?: RoleState;
 }
 
-/** What the schedule's last download held, from cape-flier's content report. */
+/** What the schedule's last download held, from gtfs-zone-timetable-sites's content report. */
 export interface FeedContent {
   /** ok, not_zip, missing_files, parse_error, http_error, timeout, memory, error. */
   state: string;

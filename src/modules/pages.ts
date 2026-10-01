@@ -397,7 +397,7 @@ function renderSource(ctx: PageContext, row: SourceRow): string {
     return typeof url === 'string' ? field(ROLE_LABELS[role], externalLink(url)) : '';
   }).join('');
 
-  // geometry-car only sets final_url when it differs from the URL checked.
+  // gtfs-zone-feed-catalog only sets final_url when it differs from the URL checked.
   const redirect = entry?.final_url
     ? field(
         'Redirects to',

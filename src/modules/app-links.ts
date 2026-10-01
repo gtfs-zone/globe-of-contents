@@ -1,6 +1,6 @@
 /**
  * Links from a logical feed into the sibling apps. Each takes the first URL of
- * a role, which geometry-car orders best first.
+ * a role, which gtfs-zone-feed-catalog orders best first.
  */
 
 import { realtimeSlots } from 'gtfs-zone-web-common/gtfs/feed-catalog';
@@ -18,7 +18,7 @@ export function editorUrl(feed: Feed): string | null {
  * The visualizer draws realtime against a schedule, so it needs both. Without
  * a `cors` key it proxies both halves, which is the right guess for a catalog
  * URL. An endpoint of undeclared type takes the first empty slot, as in
- * geometry-car's viewer link.
+ * gtfs-zone-feed-catalog's viewer link.
  */
 export function viewerUrl(feed: Feed): string | null {
   const scheduled = feed.urls.scheduled?.[0];

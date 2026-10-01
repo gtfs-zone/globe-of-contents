@@ -163,7 +163,7 @@ const sourcesPage: HelpPage = {
   title: 'Where the data comes from',
   render: () =>
     [
-      lede('Three catalogs, refreshed daily by geometry-car:'),
+      lede('Three catalogs, refreshed daily by gtfs-zone-feed-catalog:'),
       `<ul class="list-disc list-inside space-y-1 text-sm">
         <li>${renderExternalLink('https://github.com/transitland/transitland-atlas', 'Transitland Atlas')}: the open DMFR corpus, ${renderExternalLink('https://creativecommons.org/licenses/by/4.0/', 'CC BY 4.0')}</li>
         <li>${renderExternalLink('https://mobilitydatabase.org', 'Mobility Database')}: MobilityData's catalog, with places, ${renderExternalLink('https://creativecommons.org/publicdomain/zero/1.0/', 'CC0')}</li>
