@@ -1,5 +1,5 @@
 # Serves the built site as an immutable image, deployed to k3s by ArgoCD
-# (deploy-gtfs-rt, sites/globe-of-contents.yaml). Expects `dist/` to exist: run
+# (gtfs-zone-infra, sites/feed-list.yaml). Expects `dist/` to exist: run
 # `pnpm build` first, which is what CI does before calling docker build.
 #
 # nginx-unprivileged listens on :8080 as uid 101 and never needs root, so the
