@@ -9,7 +9,8 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "check": "pnpm run typecheck",
+    "check": "pnpm run typecheck && pnpm run knip",
+    "knip": "knip",
     "vuln": "sh scripts/vuln-gate.sh",
     "commit": "cz commit"
   },
@@ -25,6 +26,7 @@
     "@types/geojson": "^7946.0.16",
     "@types/node": "^24.19.0",
     "autoprefixer": "^10.6.1",
+    "knip": "^6.39.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
     "vite": "^7.3.6"

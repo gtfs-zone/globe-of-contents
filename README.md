@@ -12,7 +12,7 @@ shows comes from the artifacts
 ```bash
 pnpm install
 pnpm dev          # vite on :8080, reading https://data.gtfs.zone
-pnpm typecheck
+pnpm check        # typecheck, knip
 pnpm build
 ```
 
