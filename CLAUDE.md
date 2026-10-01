@@ -4,7 +4,7 @@
 
 `list.gtfs.zone`: a list and a world map of every public GTFS feed in the
 Transitland Atlas, the Mobility Database and the curated examples, merged into
-logical feeds, with each one's reachability. Read-only; no backend. The data is geometry-car's published
+logical feeds, with each one's reachability. Read-only; no backend. The data is feed-catalog's published
 artifacts at `https://data.gtfs.zone`.
 
 ## Commands
@@ -23,7 +23,7 @@ git config core.hooksPath .githooks   # once per clone; runs typecheck pre-commi
 src/boot-path.ts           rewrites a crawlable /feed/<id>/<slug> URL to #feed=<id> before anything reads the hash
 src/shell.ts               mounts gtfs-zone-web-common's app shell and sets up its search box
 src/config.ts              every magic number and URL, one frozen CONFIG
-src/data/artifacts.ts      artifact types (mirroring geometry-car's artifacts.py), the fetch, CatalogueIndex
+src/data/artifacts.ts      artifact types (mirroring feed-catalog's artifacts.py), the fetch, CatalogueIndex
                            (first paint is search.json; feeds.json, sources.json and status.json follow)
 src/types/page-state.ts    home | feed | source, and their hash codec
 src/modules/app-state.ts   FocusController: page half of the hash, filter half replaced in place
@@ -39,13 +39,13 @@ src/modules/help-pages.ts  the Guide's pages
   `.json` as immutable for a year, which is right for fingerprinted assets and
   wrong for data that refreshes daily. Do not move them into `public/`.
 - **Feed pages are for crawlers.** `/feed/<id>/<slug>` is `index.html` with
-  geometry-car's `pages/feed/<id>/{head,body}.html` fragments included by nginx
+  feed-catalog's `pages/feed/<id>/{head,body}.html` fragments included by nginx
   SSI (`src/index.html`, `nginx.conf`); `/sitemap.xml` is proxied from the same
   bucket. `nginx.conf` is an envsubst template: `PAGES_UPSTREAM` defaults to
   `https://data.gtfs.zone` and the cluster points it at Garage directly. The
   app itself still routes on the hash; `boot-path.ts` converts on load.
-- **The artifact shapes belong to geometry-car.** `src/data/artifacts.ts`
-  mirrors `geometry_car/artifacts.py`; a field change starts there.
+- **The artifact shapes belong to feed-catalog.** `src/data/artifacts.ts`
+  mirrors `gtfs_zone_feed_catalog/artifacts.py`; a field change starts there.
 - **Unplaced feeds are counted, never hidden.** Much of the corpus has no
   coordinates. The Home list says how many of the feeds it lists are not on
   the map.
@@ -55,7 +55,7 @@ src/modules/help-pages.ts  the Guide's pages
   the object already listed. Anything reading `members` checks `hasDetail`.
 - **Feeds, not rows.** The list, the map and the search are over the feeds.
   `sources.json` rows only appear as a feed's members and on their own Source
-  page; the feed-to-row grouping is geometry-car's, never recomputed here.
+  page; the feed-to-row grouping is feed-catalog's, never recomputed here.
 - **Every focus change goes through `appState.setFocus`:** list links, map
   clicks, search picks and breadcrumbs alike. The sidebar and the camera react
   to `onFocusChange`, not to each other.
@@ -95,8 +95,8 @@ commits its digest into `gtfs-zone-infra/sites`.
 
 | Repo | Description | URL |
 |---|---|---|
-| geometry-car | Dagster pipeline publishing the artifacts this app reads | https://git.kcfam.us/gtfs.zone/geometry-car |
+| feed-catalog | Dagster pipeline publishing the artifacts this app reads | https://github.com/gtfs-zone/gtfs-zone-feed-catalog |
 | gtfs-zone-web-common | Shared browser-side library | https://github.com/gtfs-zone/gtfs-zone-web-common |
-| coloring-book | Schedule editor, edit.gtfs.zone | https://git.kcfam.us/gtfs.zone/coloring-book |
-| test-track | Realtime visualizer, viz.rt.gtfs.zone | https://git.kcfam.us/gtfs.zone/test-track |
-| deploy-gtfs-rt | k3s + ArgoCD deploy repo | https://git.kcfam.us/gtfs.zone/deploy-gtfs-rt |
+| gtfs-zone-editor | Schedule editor, edit.gtfs.zone | https://github.com/gtfs-zone/gtfs-zone-editor |
+| rt-viewer | Realtime visualizer, viz.rt.gtfs.zone | https://github.com/gtfs-zone/gtfs-zone-rt-viewer |
+| gtfs-zone-infra | k3s + ArgoCD deploy repo | https://github.com/gtfs-zone/gtfs-zone-infra |
