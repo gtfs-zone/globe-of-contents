@@ -11,7 +11,9 @@ import { hasRealtime } from '../data/artifacts';
 /** The editor needs a schedule and nothing else. */
 export function editorUrl(feed: Feed): string | null {
   const scheduled = feed.urls.scheduled?.[0];
-  return scheduled ? `${CONFIG.EDITOR_BASE}/#load=${encodeURIComponent(scheduled)}` : null;
+  return scheduled
+    ? `${CONFIG.EDITOR_BASE}/#load=${encodeURIComponent(scheduled)}`
+    : null;
 }
 
 /**
@@ -27,8 +29,14 @@ export function viewerUrl(feed: Feed): string | null {
   }
   const params = new URLSearchParams({ scheduled });
   const slots = realtimeSlots(feed);
-  if (slots.vehiclesUrl) params.set('rt_vp', slots.vehiclesUrl);
-  if (slots.tripUpdatesUrl) params.set('rt_tu', slots.tripUpdatesUrl);
-  if (slots.alertsUrl) params.set('rt_al', slots.alertsUrl);
+  if (slots.vehiclesUrl) {
+    params.set('rt_vp', slots.vehiclesUrl);
+  }
+  if (slots.tripUpdatesUrl) {
+    params.set('rt_tu', slots.tripUpdatesUrl);
+  }
+  if (slots.alertsUrl) {
+    params.set('rt_al', slots.alertsUrl);
+  }
   return `${CONFIG.VIEWER_BASE}/#${params.toString()}`;
 }

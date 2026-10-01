@@ -3,7 +3,13 @@
  * lives in gtfs-zone-web-common's `ui/help-modal`.
  */
 
-import { eyebrow, footnote, glyphList, lede, type HelpPageEntry } from 'gtfs-zone-web-common/ui/help-modal';
+import {
+  eyebrow,
+  footnote,
+  glyphList,
+  lede,
+  type HelpPageEntry,
+} from 'gtfs-zone-web-common/ui/help-modal';
 import { renderExternalLink } from 'gtfs-zone-web-common/ui/about-links';
 
 export type HelpGroup = 'Getting Started' | 'Reference';
@@ -18,15 +24,27 @@ function icon(paths: string): string {
   return `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
 }
 
-const ICON_SEARCH = icon('<circle cx="14" cy="14" r="8"/><path d="M20 20l7 7"/>');
+const ICON_SEARCH = icon(
+  '<circle cx="14" cy="14" r="8"/><path d="M20 20l7 7"/>'
+);
 const ICON_MAP = icon(
   '<path d="M16 5c-4.4 0-8 3.4-8 7.6C8 18.4 16 27 16 27s8-8.6 8-14.4C24 8.4 20.4 5 16 5z"/><circle cx="16" cy="12.5" r="2.5"/>'
 );
-const ICON_OPEN = icon('<path d="M18 5h9v9"/><path d="M27 5L15 17"/><path d="M24 19v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V11a2 2 0 0 1 2-2h7"/>');
-const ICON_UP = icon('<circle cx="16" cy="16" r="10"/><path d="M11 16l4 4 7-8"/>');
-const ICON_DOWN = icon('<circle cx="16" cy="16" r="10"/><path d="M12 12l8 8M20 12l-8 8"/>');
-const ICON_PARTIAL = icon('<circle cx="16" cy="16" r="10"/><path d="M16 6a10 10 0 0 1 0 20z" fill="currentColor"/>');
-const ICON_UNKNOWN = icon('<circle cx="16" cy="16" r="10"/><path d="M11 16h10"/>');
+const ICON_OPEN = icon(
+  '<path d="M18 5h9v9"/><path d="M27 5L15 17"/><path d="M24 19v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V11a2 2 0 0 1 2-2h7"/>'
+);
+const ICON_UP = icon(
+  '<circle cx="16" cy="16" r="10"/><path d="M11 16l4 4 7-8"/>'
+);
+const ICON_DOWN = icon(
+  '<circle cx="16" cy="16" r="10"/><path d="M12 12l8 8M20 12l-8 8"/>'
+);
+const ICON_PARTIAL = icon(
+  '<circle cx="16" cy="16" r="10"/><path d="M16 6a10 10 0 0 1 0 20z" fill="currentColor"/>'
+);
+const ICON_UNKNOWN = icon(
+  '<circle cx="16" cy="16" r="10"/><path d="M11 16h10"/>'
+);
 
 let appVersion = '';
 
@@ -107,7 +125,8 @@ const statesPage: HelpPage = {
         {
           icon: ICON_UNKNOWN,
           term: 'Inaccessible',
-          description: 'Nothing it lists could be checked: every URL needs an API key, or none has been checked yet.',
+          description:
+            'Nothing it lists could be checked: every URL needs an API key, or none has been checked yet.',
         },
       ]),
       lede(
@@ -178,4 +197,10 @@ const sourcesPage: HelpPage = {
     ].join(''),
 };
 
-export const HELP_PAGES: HelpPage[] = [overviewPage, statesPage, mergingPage, unplacedPage, sourcesPage];
+export const HELP_PAGES: HelpPage[] = [
+  overviewPage,
+  statesPage,
+  mergingPage,
+  unplacedPage,
+  sourcesPage,
+];

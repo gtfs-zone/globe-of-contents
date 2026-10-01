@@ -8,12 +8,27 @@
  * delegates both.
  */
 
-import { feedStateBadge, roleChip, roleChips } from 'gtfs-zone-web-common/gtfs/feed-badges';
+import {
+  feedStateBadge,
+  roleChip,
+  roleChips,
+} from 'gtfs-zone-web-common/gtfs/feed-badges';
 import type { BreadcrumbItem } from 'gtfs-zone-web-common/ui/breadcrumb-trail';
-import { TOOLTIP_TRIGGER_CLASS, renderTooltipTrigger, tooltipContentAttr } from 'gtfs-zone-web-common/ui/field-label';
+import {
+  TOOLTIP_TRIGGER_CLASS,
+  renderTooltipTrigger,
+  tooltipContentAttr,
+} from 'gtfs-zone-web-common/ui/field-label';
 import { escapeHtml } from 'gtfs-zone-web-common/util/escape-html';
 import { CONFIG } from '../config';
-import type { CatalogueIndex, Feed, Role, RoleState, SourceRow, State } from '../data/artifacts';
+import type {
+  CatalogueIndex,
+  Feed,
+  Role,
+  RoleState,
+  SourceRow,
+  State,
+} from '../data/artifacts';
 import { ROLES, STATES, stateOf } from '../data/artifacts';
 import type { PageState } from '../types/page-state';
 import { editorUrl, viewerUrl } from './app-links';
@@ -61,12 +76,23 @@ const ROW_URL_FIELDS: [keyof SourceRow, Role][] = [
 // ─── Breadcrumbs ──────────────────────────────────────────────────────────────
 
 function feedCrumb(feed: Feed): BreadcrumbItem<PageState> {
-  return { typeLabel: 'Feed', label: feed.name || feed.feedId, pageState: { type: 'feed', feed: feed.feedId } };
+  return {
+    typeLabel: 'Feed',
+    label: feed.name || feed.feedId,
+    pageState: { type: 'feed', feed: feed.feedId },
+  };
 }
 
-const HOME_CRUMB: BreadcrumbItem<PageState> = { typeLabel: 'list.gtfs.zone', label: 'All feeds', pageState: HOME };
+const HOME_CRUMB: BreadcrumbItem<PageState> = {
+  typeLabel: 'list.gtfs.zone',
+  label: 'All feeds',
+  pageState: HOME,
+};
 
-export function buildBreadcrumbs(index: CatalogueIndex, state: PageState): BreadcrumbItem<PageState>[] {
+export function buildBreadcrumbs(
+  index: CatalogueIndex,
+  state: PageState
+): BreadcrumbItem<PageState>[] {
   if (state.type === 'feed') {
     const feed = index.feed(state.feed);
     return feed ? [HOME_CRUMB, feedCrumb(feed)] : [];
@@ -90,7 +116,10 @@ export function buildBreadcrumbs(index: CatalogueIndex, state: PageState): Bread
   return [];
 }
 
-export function validateState(index: CatalogueIndex, state: PageState): boolean {
+export function validateState(
+  index: CatalogueIndex,
+  state: PageState
+): boolean {
   if (state.type === 'feed') {
     return index.feed(state.feed) !== undefined;
   }
@@ -102,7 +131,12 @@ export function validateState(index: CatalogueIndex, state: PageState): boolean 
 
 // ─── Shared bits ──────────────────────────────────────────────────────────────
 
-function navLink(ctx: PageContext, state: PageState, inner: string, cls: string): string {
+function navLink(
+  ctx: PageContext,
+  state: PageState,
+  inner: string,
+  cls: string
+): string {
   return `<a href="${escapeHtml(ctx.href(state))}" data-nav="${escapeHtml(JSON.stringify(state))}" class="${cls}">${inner}</a>`;
 }
 
@@ -110,15 +144,25 @@ function stateBadge(state: State | RoleState, size = ''): string {
   return `<span class="badge ${size} ${STATE_BADGE[state]}">${STATE_LABELS[state]}</span>`;
 }
 
-const HINTED_LABEL = 'underline decoration-dotted underline-offset-2 cursor-help';
+const HINTED_LABEL =
+  'underline decoration-dotted underline-offset-2 cursor-help';
 
 /** A field's label, with its hover text from `FIELD_HINTS` when it has one. */
 function fieldLabel(label: string): string {
   const hint = FIELD_HINTS[label];
-  return hint ? renderTooltipTrigger(hint, `<span class="${HINTED_LABEL}">${label}</span>`) : label;
+  return hint
+    ? renderTooltipTrigger(
+        hint,
+        `<span class="${HINTED_LABEL}">${label}</span>`
+      )
+    : label;
 }
 
-function field(label: string, value: string, labelHtml = fieldLabel(label)): string {
+function field(
+  label: string,
+  value: string,
+  labelHtml = fieldLabel(label)
+): string {
   return value
     ? `<tr><th class="font-normal opacity-60 align-top whitespace-nowrap pr-4">${labelHtml}</th><td class="break-all">${value}</td></tr>`
     : '';
@@ -138,7 +182,9 @@ function externalLink(url: string): string {
 function catalogId(row: SourceRow): string {
   const id = `<code>${escapeHtml(row.feedId)}</code>`;
   const url = catalogUrl(row);
-  return url ? `<a class="link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${id}</a>` : id;
+  return url
+    ? `<a class="link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${id}</a>`
+    : id;
 }
 
 function guideLink(page: string, text: string): string {
@@ -176,8 +222,14 @@ const LINE_CLASS: Record<State, string> = {
 function renderStats(ctx: PageContext): string {
   const { feeds } = ctx.index.summary;
   const only = ctx.filters.status.length === 1 ? ctx.filters.status[0] : null;
-  const stat = (label: string, value: number, cls: string, state: State | '') => {
-    const active = state === '' ? ctx.filters.status.length === 0 : only === state;
+  const stat = (
+    label: string,
+    value: number,
+    cls: string,
+    state: State | ''
+  ) => {
+    const active =
+      state === '' ? ctx.filters.status.length === 0 : only === state;
     return `
       <button type="button" class="stat py-2 px-3 place-items-center ${active ? 'bg-base-300' : ''}"
         data-action="status" data-arg="${state}" aria-pressed="${active}">
@@ -190,7 +242,12 @@ function renderStats(ctx: PageContext): string {
     <div class="stats stats-horizontal bg-base-200 w-full text-center">
       ${stat('Feeds', feeds.total, '', '')}
       ${STATES.map((state) =>
-        stat(STATE_LABELS[state], feeds.by_state[state] ?? 0, STATE_TEXT[state], state)
+        stat(
+          STATE_LABELS[state],
+          feeds.by_state[state] ?? 0,
+          STATE_TEXT[state],
+          state
+        )
       ).join('')}
     </div>
     <label class="flex items-center gap-2 text-xs cursor-pointer">
@@ -229,12 +286,17 @@ function renderHome(ctx: PageContext): string {
   const feeds = ctx.filtered;
   const shown = feeds.slice(0, CONFIG.DISPLAY_CAP);
   const hidden = feeds.length - shown.length;
-  const unplaced = feeds.reduce((n, feed) => (feed.lat === undefined ? n + 1 : n), 0);
+  const unplaced = feeds.reduce(
+    (n, feed) => (feed.lat === undefined ? n + 1 : n),
+    0
+  );
 
   const count =
     `<span class="font-semibold">${formatCount(feeds.length)}</span> matching` +
     (hidden > 0 ? `, first ${formatCount(shown.length)} shown` : '') +
-    (feeds.length > 1 && !ctx.near && !ctx.filters.q.trim() ? ', newest schedule first' : '') +
+    (feeds.length > 1 && !ctx.near && !ctx.filters.q.trim()
+      ? ', newest schedule first'
+      : '') +
     (feeds.length > 1 && ctx.near ? ', nearest first' : '') +
     (unplaced > 0
       ? ` <span class="opacity-60">(${formatCount(unplaced)} have no coordinates and are not on the map)</span>`
@@ -288,7 +350,9 @@ function renderRole(feed: Feed, role: Role): string {
 
 /** A realtime row's roles, one chip per URL it lists, in its row's state. */
 function rowRoleChips(row: SourceRow, state: RoleState): string {
-  return ROW_URL_FIELDS.filter(([key, role]) => role !== 'scheduled' && row[key])
+  return ROW_URL_FIELDS.filter(
+    ([key, role]) => role !== 'scheduled' && row[key]
+  )
     .map(([, role]) => roleChip(role, state, 'sm'))
     .join('');
 }
@@ -394,7 +458,9 @@ function renderSource(ctx: PageContext, row: SourceRow): string {
 
   const urls = ROW_URL_FIELDS.map(([key, role]) => {
     const url = row[key];
-    return typeof url === 'string' ? field(ROLE_LABELS[role], externalLink(url)) : '';
+    return typeof url === 'string'
+      ? field(ROLE_LABELS[role], externalLink(url))
+      : '';
   }).join('');
 
   // gtfs-zone-feed-catalog only sets final_url when it differs from the URL checked.
@@ -412,7 +478,12 @@ function renderSource(ctx: PageContext, row: SourceRow): string {
         return `<code>${escapeHtml(id)}</code>`;
       }
       const label = `${other.name || other.feedId} (${CATALOG_LABELS[other.catalog] ?? other.catalog})`;
-      return navLink(ctx, { type: 'source', source: id }, escapeHtml(label), 'link');
+      return navLink(
+        ctx,
+        { type: 'source', source: id },
+        escapeHtml(label),
+        'link'
+      );
     })
     .join('<br>');
 
@@ -473,7 +544,10 @@ export function renderPage(ctx: PageContext, state: PageState): string {
 }
 
 /** What a page puts on the map: the feed, or the row's own place, else its feed's. */
-export function placeFor(index: CatalogueIndex, state: PageState): Feed | SourceRow | null {
+export function placeFor(
+  index: CatalogueIndex,
+  state: PageState
+): Feed | SourceRow | null {
   if (state.type === 'feed') {
     return index.feed(state.feed) ?? null;
   }

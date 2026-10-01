@@ -1,4 +1,9 @@
-import { renderMoonIcon, renderNavIcon, renderSunIcon, type NavIconName } from 'gtfs-zone-web-common/ui/nav-icons';
+import {
+  renderMoonIcon,
+  renderNavIcon,
+  renderSunIcon,
+  type NavIconName,
+} from 'gtfs-zone-web-common/ui/nav-icons';
 import type { NavbarAction } from 'gtfs-zone-web-common/ui/navbar-actions';
 
 /**

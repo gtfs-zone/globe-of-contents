@@ -28,11 +28,16 @@ const CODEC: PageStateCodec<PageState> = {
 /** A page state manager whose Feed and Source hashes leave the filters out. */
 class AppPages extends PageStateManager<PageState, BreadcrumbItem<PageState>> {
   override buildHash(state: PageState): string {
-    return state.type === 'home' ? super.buildHash(state) : pageToParams(state).toString();
+    return state.type === 'home'
+      ? super.buildHash(state)
+      : pageToParams(state).toString();
   }
 }
 
-export class AppState extends FocusController<PageState, BreadcrumbItem<PageState>> {
+export class AppState extends FocusController<
+  PageState,
+  BreadcrumbItem<PageState>
+> {
   constructor(hooks: FocusHooks<PageState>) {
     super(new AppPages({ codec: CODEC, enableUrlSync: true }), hooks);
   }
@@ -64,7 +69,9 @@ export class AppState extends FocusController<PageState, BreadcrumbItem<PageStat
       window.history.replaceState(
         null,
         '',
-        hash ? `#${hash}` : `${window.location.pathname}${window.location.search}`
+        hash
+          ? `#${hash}`
+          : `${window.location.pathname}${window.location.search}`
       );
     }
   }

@@ -3,9 +3,21 @@
  * and the search box so the same feed never reads two different ways.
  */
 
-import { FEED_STATE_LABELS, ROLE_LABELS as FEED_ROLE_LABELS } from 'gtfs-zone-web-common/gtfs/feed-catalog';
+import {
+  FEED_STATE_LABELS,
+  ROLE_LABELS as FEED_ROLE_LABELS,
+} from 'gtfs-zone-web-common/gtfs/feed-catalog';
 import { CONFIG } from '../config';
-import type { Feed, FeedContent, Place, Role, RoleState, SourceRow, State, StatusEntry } from '../data/artifacts';
+import type {
+  Feed,
+  FeedContent,
+  Place,
+  Role,
+  RoleState,
+  SourceRow,
+  State,
+  StatusEntry,
+} from '../data/artifacts';
 
 export { placeLine as feedPlaceLine } from 'gtfs-zone-web-common/gtfs/feed-catalog';
 
@@ -52,31 +64,42 @@ const SNIFF_LABELS: Record<string, string> = {
 /** The last download's outcome, with what came back when it was not a zip. */
 export function contentLine(content: FeedContent): string {
   const label = CONTENT_LABELS[content.state] ?? content.state;
-  const sniffed = content.state === 'not_zip' && content.detail ? SNIFF_LABELS[content.detail] : undefined;
+  const sniffed =
+    content.state === 'not_zip' && content.detail
+      ? SNIFF_LABELS[content.detail]
+      : undefined;
   return sniffed ? `${label}: ${sniffed}` : label;
 }
 
 /** Hover text for the Feed and Source pages' field labels. */
 export const FIELD_HINTS: Record<string, string> = {
-  Place: 'Where the catalog places this feed. Only the Mobility Database carries coordinates.',
-  'Also known as': "Other names for this feed: its catalog entries', its operators' and the agencies in its schedule.",
-  'Schedule size': "The schedule zip's size, from the Content-Length header of the last check.",
+  Place:
+    'Where the catalog places this feed. Only the Mobility Database carries coordinates.',
+  'Also known as':
+    "Other names for this feed: its catalog entries', its operators' and the agencies in its schedule.",
+  'Schedule size':
+    "The schedule zip's size, from the Content-Length header of the last check.",
   'Last modified': "The schedule's Last-Modified header from the last check.",
   'Schedule contents':
     'What the last download of the schedule held, from sites.gtfs.zone, which builds a timetable site from it. Only checked for feeds it builds.',
-  Service: 'The first and last service day in the schedule, from its calendars.',
+  Service:
+    'The first and last service day in the schedule, from its calendars.',
   Publisher: "The publisher named in the schedule's feed_info.txt.",
   Version: "The version named in the schedule's feed_info.txt.",
   Contents: 'Routes, stops and trips in the schedule.',
   'Feed id': "This merged feed's id on list.gtfs.zone.",
   Operator: 'The agency or organisation the catalog says runs this feed.',
-  'Catalog id': "This entry's id in its catalog; links to the catalog's own page for it.",
+  'Catalog id':
+    "This entry's id in its catalog; links to the catalog's own page for it.",
   From: 'Where the catalog itself got this entry.',
-  'Catalog status': "The catalog's own lifecycle for this entry: active, deprecated, inactive and so on.",
+  'Catalog status':
+    "The catalog's own lifecycle for this entry: active, deprecated, inactive and so on.",
   License: 'The license the catalog lists for this feed.',
   'Same endpoint as': 'Entries in other catalogs pointing at the same URL.',
-  'Redirects to': 'Where the URL ended up after following redirects on the last check.',
-  State: 'Up: answered on the last check. Down: failed it. Inaccessible: needs a key or was not checked. Click for the guide.',
+  'Redirects to':
+    'Where the URL ended up after following redirects on the last check.',
+  State:
+    'Up: answered on the last check. Down: failed it. Inaccessible: needs a key or was not checked. Click for the guide.',
   'HTTP status': 'The status code of the last check.',
   Error: 'Why the last check failed.',
   Latency: 'How long the last check took to answer.',
@@ -102,7 +125,11 @@ export function formatDate(iso: string | undefined): string {
   const date = new Date(iso);
   return Number.isNaN(date.getTime())
     ? iso
-    : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    : date.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
 }
 
 export function formatCount(n: number): string {
@@ -124,7 +151,11 @@ export function formatBytes(n: number): string {
 }
 
 /** Why a row reads the way it does, in a few words. */
-export function statusLine(row: SourceRow, state: RoleState, entry: StatusEntry | undefined): string {
+export function statusLine(
+  row: SourceRow,
+  state: RoleState,
+  entry: StatusEntry | undefined
+): string {
   if (state === 'unknown') {
     return row.auth ? 'needs an API key' : '';
   }
@@ -148,10 +179,14 @@ export function statusLine(row: SourceRow, state: RoleState, entry: StatusEntry 
 /** A feed's state in a few words: since when it is down or partial, or why it is inaccessible. */
 export function feedStatusLine(feed: Feed): string {
   if (feed.state === 'down') {
-    return feed.since ? `down since ${formatDate(feed.since)}` : 'not answering';
+    return feed.since
+      ? `down since ${formatDate(feed.since)}`
+      : 'not answering';
   }
   if (feed.state === 'partial') {
-    return feed.since ? `partial since ${formatDate(feed.since)}` : 'some realtime is not answering';
+    return feed.since
+      ? `partial since ${formatDate(feed.since)}`
+      : 'some realtime is not answering';
   }
   if (feed.state === 'unknown') {
     return feed.auth?.length ? 'needs an API key' : '';
@@ -171,7 +206,11 @@ export function catalogUrl(row: SourceRow): string | null {
 }
 
 export function placeLine(place: Place): string {
-  return [place.municipality, place.subdivision, place.country || place.country_code]
+  return [
+    place.municipality,
+    place.subdivision,
+    place.country || place.country_code,
+  ]
     .filter(Boolean)
     .join(', ');
 }

@@ -2,28 +2,56 @@
 import './boot-path';
 // Mounts the shell markup; must stay the first import after boot-path.
 import './shell';
-import { renderAutoZoomControl, syncAutoZoomControl, wireAutoZoomControl } from 'gtfs-zone-web-common/map/auto-zoom';
+import {
+  renderAutoZoomControl,
+  syncAutoZoomControl,
+  wireAutoZoomControl,
+} from 'gtfs-zone-web-common/map/auto-zoom';
 import { searchPlaces } from 'gtfs-zone-web-common/map/place-search';
 import type { PlacePayload } from 'gtfs-zone-web-common/map/place-search';
 import { BottomSheetController } from 'gtfs-zone-web-common/ui/bottom-sheet';
 import { pageTitle } from 'gtfs-zone-web-common/ui/breadcrumb-trail';
-import { setHelpPages, showHelpModal } from 'gtfs-zone-web-common/ui/help-modal';
-import { renderDockIcons, renderNavbarActions } from 'gtfs-zone-web-common/ui/navbar-actions';
+import {
+  setHelpPages,
+  showHelpModal,
+} from 'gtfs-zone-web-common/ui/help-modal';
+import {
+  renderDockIcons,
+  renderNavbarActions,
+} from 'gtfs-zone-web-common/ui/navbar-actions';
 import { notify } from 'gtfs-zone-web-common/ui/notification-system';
 import { PanelHost } from 'gtfs-zone-web-common/ui/panel-host';
-import { PanelResizer, restorePanelWidth } from 'gtfs-zone-web-common/ui/panel-resizer';
+import {
+  PanelResizer,
+  restorePanelWidth,
+} from 'gtfs-zone-web-common/ui/panel-resizer';
 import { feedProgressIndicator } from 'gtfs-zone-web-common/ui/progress-indicator';
 import { SearchController } from 'gtfs-zone-web-common/ui/search-controller';
 import { ThemeController } from 'gtfs-zone-web-common/ui/theme-controller';
 import { escapeHtml } from 'gtfs-zone-web-common/util/escape-html';
 import { initFieldTooltipPortal } from 'gtfs-zone-web-common/util/tooltip-position';
 import { CONFIG } from './config';
-import type { CoreCatalogue, DetailCatalogue, Feed, State } from './data/artifacts';
+import type {
+  CoreCatalogue,
+  DetailCatalogue,
+  Feed,
+  State,
+} from './data/artifacts';
 import { CatalogueIndex, loadCore, loadDetail } from './data/artifacts';
 import { AppState } from './modules/app-state';
 import type { Filters, Near } from './modules/filters';
-import { FeedFilter, filterParams, readFilters, saveFilters, sameFilters } from './modules/filters';
-import { HELP_GROUP_ORDER, HELP_PAGES, setHelpVersion } from './modules/help-pages';
+import {
+  FeedFilter,
+  filterParams,
+  readFilters,
+  saveFilters,
+  sameFilters,
+} from './modules/filters';
+import {
+  HELP_GROUP_ORDER,
+  HELP_PAGES,
+  setHelpVersion,
+} from './modules/help-pages';
 import { formatBytes, formatDate } from './modules/labels';
 import { GlobeMap } from './modules/map-view';
 import { DOCK_ICONS, NAVBAR_ACTIONS } from './modules/navbar-action-list';
@@ -51,9 +79,13 @@ themeController.initialize();
 
 setHelpVersion(__APP_VERSION__);
 setHelpPages(HELP_PAGES, HELP_GROUP_ORDER);
-document.getElementById('help-btn')!.addEventListener('click', () => void showHelpModal());
+document
+  .getElementById('help-btn')!
+  .addEventListener('click', () => void showHelpModal());
 
-const map = new GlobeMap('map', (feedId) => appState.setFocus({ type: 'feed', feed: feedId }));
+const map = new GlobeMap('map', (feedId) =>
+  appState.setFocus({ type: 'feed', feed: feedId })
+);
 map.onEmptyClick = () => appState.clearFocus();
 themeController.onThemeChange(() => map.onThemeChange());
 new PanelResizer(appContainer, map);
@@ -64,10 +96,13 @@ wireAutoZoomControl(map.getAutoZoom());
 
 // Browse snaps the sheet open over the map; Guide opens its modal and leaves
 // the sheet where it is.
-const bottomSheet = new BottomSheetController(document.getElementById('right-panel')!, [
-  { id: 'dock-browse' },
-  { id: 'dock-guide', snap: null, onSelect: () => void showHelpModal() },
-]);
+const bottomSheet = new BottomSheetController(
+  document.getElementById('right-panel')!,
+  [
+    { id: 'dock-browse' },
+    { id: 'dock-guide', snap: null, onSelect: () => void showHelpModal() },
+  ]
+);
 // On a phone the sheet covers the bottom of the map, so the camera holds the
 // focused feed above it.
 bottomSheet.onSnapChange((covered) => map.setBottomPadding(covered));
@@ -90,7 +125,19 @@ const panel = new PanelHost<PageState>(panelContent, {
   navigate: (state) => appState.setFocus(state),
   href: (state) => appState.hrefFor(state),
   renderPage: (state) =>
-    index ? renderPage({ index, filtered, filters, href: (s) => appState.hrefFor(s), detailFailed, near }, state) : '',
+    index
+      ? renderPage(
+          {
+            index,
+            filtered,
+            filters,
+            href: (s) => appState.hrefFor(s),
+            detailFailed,
+            near,
+          },
+          state
+        )
+      : '',
   action: (action, arg) => {
     if (action === 'guide') {
       void showHelpModal(arg || undefined);
@@ -118,7 +165,10 @@ const appState = new AppState({
     if (!index) {
       return;
     }
-    document.title = state.type === 'home' ? DEFAULT_TITLE : pageTitle(appState.breadcrumbs, 'list.gtfs.zone');
+    document.title =
+      state.type === 'home'
+        ? DEFAULT_TITLE
+        : pageTitle(appState.breadcrumbs, 'list.gtfs.zone');
     panel.show(state, appState.breadcrumbs);
     if (state.type !== 'home') {
       bottomSheet.open('half');
@@ -203,9 +253,12 @@ function pickPlace(place: PlacePayload): void {
 // Picking a feed is the same event as clicking it on the map.
 const searchController = new SearchController<SearchPayload>({
   getEntries: () => searchEntries?.build(filters) ?? [],
-  getRemoteEntries: (query, signal) => searchPlaces(query, map.getCenter(), signal),
+  getRemoteEntries: (query, signal) =>
+    searchPlaces(query, map.getCenter(), signal),
   onSelect: (payload) =>
-    payload.kind === 'feed' ? appState.setFocus({ type: 'feed', feed: payload.feedId }) : pickPlace(payload),
+    payload.kind === 'feed'
+      ? appState.setFocus({ type: 'feed', feed: payload.feedId })
+      : pickPlace(payload),
   limit: CONFIG.SEARCH_LIMIT,
 });
 searchController.initialize();
@@ -227,14 +280,17 @@ function start(data: CoreCatalogue): void {
   searchEntries = new SearchEntries(index.feeds);
   appState.setIndex(index, () => detailSettled);
 
-  document.getElementById('generated-at')!.textContent = `Checked ${formatDate(data.generatedAt)}`;
+  document.getElementById('generated-at')!.textContent =
+    `Checked ${formatDate(data.generatedAt)}`;
 
   filtered = feedFilter.apply(filters, near);
   map.setFeeds(filtered);
 
   // A Source link is adopted as-is; `onDetail` checks it once the rows are in.
   if (pending.type === 'feed' && !validateState(index, pending)) {
-    notify.warning(`Nothing in this catalogue matches the linked ${pending.type}`);
+    notify.warning(
+      `Nothing in this catalogue matches the linked ${pending.type}`
+    );
     appState.adopt({ type: 'home' });
   } else {
     appState.adopt(pending);
@@ -296,8 +352,14 @@ function reportProgress(received: number, total: number | null): void {
     );
     return;
   }
-  feedProgressIndicator.updateProgress(LOAD_OP, 0, `Loading the catalogue (${formatBytes(received)})`);
-  document.querySelector('#global-loading-indicator .loading-progress')?.removeAttribute('value');
+  feedProgressIndicator.updateProgress(
+    LOAD_OP,
+    0,
+    `Loading the catalogue (${formatBytes(received)})`
+  );
+  document
+    .querySelector('#global-loading-indicator .loading-progress')
+    ?.removeAttribute('value');
 }
 
 function boot(): void {

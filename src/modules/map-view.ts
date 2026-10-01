@@ -23,12 +23,19 @@ import type {
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { Feature, FeatureCollection, Point, Polygon } from 'geojson';
 import { AutoZoom } from 'gtfs-zone-web-common/map/auto-zoom';
-import { BasemapControl, initialMapStyle, onBasemapChanged } from 'gtfs-zone-web-common/map/basemap-control';
+import {
+  BasemapControl,
+  initialMapStyle,
+  onBasemapChanged,
+} from 'gtfs-zone-web-common/map/basemap-control';
 import { fitPadding } from 'gtfs-zone-web-common/map/fit-padding';
 import { SearchPlaceMarker } from 'gtfs-zone-web-common/map/place-search';
 import type { PlacePayload } from 'gtfs-zone-web-common/map/place-search';
 import type { MapAppearance } from 'gtfs-zone-web-common/map/basemap-control';
-import { clearThemeColorCache, resolveThemeColor } from 'gtfs-zone-web-common/util/theme-color';
+import {
+  clearThemeColorCache,
+  resolveThemeColor,
+} from 'gtfs-zone-web-common/util/theme-color';
 import { escapeHtml } from 'gtfs-zone-web-common/util/escape-html';
 import { CONFIG } from '../config';
 import type { Feed, Place, State } from '../data/artifacts';
@@ -53,7 +60,10 @@ const SELECTED_FILL = 'selected-bbox-fill';
 const SELECTED_LINE = 'selected-bbox-line';
 const SELECTED_POINT = 'selected-point';
 
-const EMPTY: FeatureCollection<Point, PointProps> = { type: 'FeatureCollection', features: [] };
+const EMPTY: FeatureCollection<Point, PointProps> = {
+  type: 'FeatureCollection',
+  features: [],
+};
 
 function restoreView(): MapView {
   const stored = readStored<MapView>(CONFIG.MAP_VIEW_KEY);
@@ -70,7 +80,11 @@ function restoreView(): MapView {
 }
 
 function abbreviate(n: number): string {
-  return n >= 10_000 ? `${Math.round(n / 1000)}k` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+  return n >= 10_000
+    ? `${Math.round(n / 1000)}k`
+    : n >= 1000
+      ? `${(n / 1000).toFixed(1)}k`
+      : String(n);
 }
 
 export class GlobeMap {
@@ -92,7 +106,8 @@ export class GlobeMap {
 
   constructor(container: string, onSelect: (feedId: string) => void) {
     const view = restoreView();
-    const appearance = readStored<MapAppearance>(CONFIG.MAP_APPEARANCE_KEY) ?? {};
+    const appearance =
+      readStored<MapAppearance>(CONFIG.MAP_APPEARANCE_KEY) ?? {};
 
     // maplibre resolves its worker relative to its own module URL, which
     // breaks once Vite bundles or pre-bundles it; point it at a Vite-built copy.
@@ -107,11 +122,16 @@ export class GlobeMap {
     this.map.addControl(new maplibregl.NavigationControl(), 'bottom-left');
     new BasemapControl(this.map, {
       initial: appearance,
-      onAppearanceChange: (next) => writeStored(CONFIG.MAP_APPEARANCE_KEY, next),
+      onAppearanceChange: (next) =>
+        writeStored(CONFIG.MAP_APPEARANCE_KEY, next),
     });
 
     this.autoZoom = new AutoZoom(() => this.focusSelected());
-    this.hover = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 8 });
+    this.hover = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      offset: 8,
+    });
     this.placeMarker = new SearchPlaceMarker(this.map);
 
     this.resolveColors();
@@ -170,12 +190,18 @@ export class GlobeMap {
       features.push({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [feed.lon, feed.lat] },
-        properties: { id: feed.feedId, name: feed.name || feed.feedId, state: feed.state },
+        properties: {
+          id: feed.feedId,
+          name: feed.name || feed.feedId,
+          state: feed.state,
+        },
       });
     }
     this.data = { type: 'FeatureCollection', features };
     this.clearClusterMarkers();
-    (this.map.getSource(SOURCE_ID) as GeoJSONSource | undefined)?.setData(this.data);
+    (this.map.getSource(SOURCE_ID) as GeoJSONSource | undefined)?.setData(
+      this.data
+    );
   }
 
   /** Highlight a place, and move the camera to it if auto-zoom allows. */
@@ -222,7 +248,11 @@ export class GlobeMap {
     clearThemeColorCache();
     this.resolveColors();
     if (this.map.getLayer(POINT_LAYER)) {
-      this.map.setPaintProperty(POINT_LAYER, 'circle-color', this.stateColorExpression());
+      this.map.setPaintProperty(
+        POINT_LAYER,
+        'circle-color',
+        this.stateColorExpression()
+      );
     }
     this.clearClusterMarkers();
     this.map.triggerRepaint();
@@ -231,8 +261,14 @@ export class GlobeMap {
   private resolveColors(): void {
     this.colors = {
       up: resolveThemeColor('--color-success', CONFIG.STATE_COLOR_FALLBACK.up),
-      partial: resolveThemeColor('--color-warning', CONFIG.STATE_COLOR_FALLBACK.partial),
-      down: resolveThemeColor('--color-error', CONFIG.STATE_COLOR_FALLBACK.down),
+      partial: resolveThemeColor(
+        '--color-warning',
+        CONFIG.STATE_COLOR_FALLBACK.partial
+      ),
+      down: resolveThemeColor(
+        '--color-error',
+        CONFIG.STATE_COLOR_FALLBACK.down
+      ),
       unknown: CONFIG.STATE_COLOR_FALLBACK.unknown,
     };
   }
@@ -282,7 +318,10 @@ export class GlobeMap {
       },
     });
 
-    this.map.addSource(SELECTED_SOURCE, { type: 'geojson', data: this.selectedData() });
+    this.map.addSource(SELECTED_SOURCE, {
+      type: 'geojson',
+      data: this.selectedData(),
+    });
     this.map.addLayer({
       id: SELECTED_FILL,
       type: 'fill',
@@ -295,7 +334,11 @@ export class GlobeMap {
       type: 'line',
       source: SELECTED_SOURCE,
       filter: ['==', ['geometry-type'], 'Polygon'],
-      paint: { 'line-color': '#3b82f6', 'line-width': 2, 'line-dasharray': [2, 1] },
+      paint: {
+        'line-color': '#3b82f6',
+        'line-width': 2,
+        'line-dasharray': [2, 1],
+      },
     });
     this.map.addLayer({
       id: SELECTED_POINT,
@@ -340,7 +383,9 @@ export class GlobeMap {
   }
 
   private paintSelected(): void {
-    (this.map.getSource(SELECTED_SOURCE) as GeoJSONSource | undefined)?.setData(this.selectedData());
+    (this.map.getSource(SELECTED_SOURCE) as GeoJSONSource | undefined)?.setData(
+      this.selectedData()
+    );
   }
 
   private focusSelected(): void {
@@ -380,7 +425,11 @@ export class GlobeMap {
     this.markers.clear();
   }
 
-  private clusterElement(id: number, lngLat: [number, number], props: Record<string, number>): HTMLElement {
+  private clusterElement(
+    id: number,
+    lngLat: [number, number],
+    props: Record<string, number>
+  ): HTMLElement {
     const total = props.point_count;
     const up = props.up ?? 0;
     const partial = props.partial ?? 0;
@@ -428,8 +477,13 @@ export class GlobeMap {
       }
       let marker = this.markers.get(id);
       if (!marker) {
-        const lngLat = (feature.geometry as Point).coordinates as [number, number];
-        marker = new maplibregl.Marker({ element: this.clusterElement(id, lngLat, props) }).setLngLat(lngLat);
+        const lngLat = (feature.geometry as Point).coordinates as [
+          number,
+          number,
+        ];
+        marker = new maplibregl.Marker({
+          element: this.clusterElement(id, lngLat, props),
+        }).setLngLat(lngLat);
         this.markers.set(id, marker);
       }
       if (!this.onScreen.has(id)) {
@@ -452,7 +506,10 @@ export class GlobeMap {
     this.saveTimer = setTimeout(() => {
       this.saveTimer = null;
       const center = this.map.getCenter();
-      writeStored(CONFIG.MAP_VIEW_KEY, { center: [center.lng, center.lat], zoom: this.map.getZoom() });
+      writeStored(CONFIG.MAP_VIEW_KEY, {
+        center: [center.lng, center.lat],
+        zoom: this.map.getZoom(),
+      });
     }, CONFIG.MAP_VIEW_SAVE_DEBOUNCE);
   }
 }

@@ -45,14 +45,19 @@ export class SearchEntries {
     const states = new Set(filters.status);
     const entries: SearchEntry<SearchPayload>[] = [];
     this.feeds.forEach((feed, i) => {
-      if ((states.size > 0 && !states.has(feed.state)) || (filters.rt && !hasRealtime(feed))) {
+      if (
+        (states.size > 0 && !states.has(feed.state)) ||
+        (filters.rt && !hasRealtime(feed))
+      ) {
         return;
       }
       entries.push({
         payload: { kind: 'feed', feedId: feed.feedId },
         icon: dotMarker(stateColor(feed.state)),
         primary: feed.name || feed.feedId,
-        secondary: [feed.subtitle, feedPlaceLine(feed)].filter(Boolean).join(', ') || undefined,
+        secondary:
+          [feed.subtitle, feedPlaceLine(feed)].filter(Boolean).join(', ') ||
+          undefined,
         haystack: this.haystack[i],
       });
     });

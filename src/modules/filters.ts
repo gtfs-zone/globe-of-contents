@@ -26,7 +26,12 @@ export interface Filters {
 const FILTER_KEYS = ['q', 'status', 'rt'];
 
 function parseStatus(value: unknown): State[] {
-  const parts = typeof value === 'string' ? value.split(',') : Array.isArray(value) ? value : [];
+  const parts =
+    typeof value === 'string'
+      ? value.split(',')
+      : Array.isArray(value)
+        ? value
+        : [];
   return STATES.filter((state) => parts.includes(state));
 }
 
@@ -73,7 +78,9 @@ export function saveFilters(filters: Filters): void {
 }
 
 export function sameFilters(a: Filters, b: Filters): boolean {
-  return a.q === b.q && a.rt === b.rt && a.status.join(',') === b.status.join(',');
+  return (
+    a.q === b.q && a.rt === b.rt && a.status.join(',') === b.status.join(',')
+  );
 }
 
 /** A point Home lists feeds by distance from: a picked place, never in the hash. */
@@ -86,11 +93,18 @@ export interface Near {
 const EARTH_RADIUS_KM = 6371;
 
 /** Great-circle distance in km. */
-function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function haversine(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
   const rad = Math.PI / 180;
   const dLat = (lat2 - lat1) * rad;
   const dLon = (lon2 - lon1) * rad;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2;
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(a));
 }
 
@@ -102,7 +116,10 @@ function byDistance(feeds: Feed[], near: Near): Feed[] {
     if (feed.lat === undefined || feed.lon === undefined) {
       unplaced.push(feed);
     } else {
-      placed.push({ feed, km: haversine(near.lat, near.lon, feed.lat, feed.lon) });
+      placed.push({
+        feed,
+        km: haversine(near.lat, near.lon, feed.lat, feed.lon),
+      });
     }
   }
   placed.sort((a, b) => a.km - b.km);
@@ -127,7 +144,9 @@ export class FeedFilter {
     const candidates = text ? text.map((i) => this.feeds[i]) : this.feeds;
     const states = new Set(filters.status);
     const kept = candidates.filter(
-      (feed) => (states.size === 0 || states.has(feed.state)) && (!filters.rt || hasRealtime(feed))
+      (feed) =>
+        (states.size === 0 || states.has(feed.state)) &&
+        (!filters.rt || hasRealtime(feed))
     );
     return near ? byDistance(kept, near) : kept;
   }

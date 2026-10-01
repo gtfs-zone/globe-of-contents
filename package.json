@@ -9,7 +9,10 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "check": "pnpm run typecheck && pnpm run knip",
+    "check": "pnpm run typecheck && pnpm run lint && pnpm run knip",
+    "lint": "eslint src/ vite.config.ts --max-warnings 0",
+    "lint:fix": "eslint src/ vite.config.ts --fix",
+    "format": "prettier --write src/ vite.config.ts",
     "knip": "knip",
     "vuln": "sh scripts/vuln-gate.sh",
     "commit": "cz commit"
@@ -23,12 +26,17 @@
   "author": "gtfs.zone contributors",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^24.19.0",
     "autoprefixer": "^10.6.1",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
     "knip": "^6.39.0",
+    "prettier": "^3.9.9",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.71.0",
     "vite": "^7.3.6"
   },
   "dependencies": {

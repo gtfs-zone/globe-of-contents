@@ -28,11 +28,23 @@ export type State = 'up' | 'partial' | 'down' | 'unknown';
 /** A role's or a row's last check. */
 export type RoleState = 'up' | 'down' | 'unknown';
 /** `realtime` is an endpoint whose entity types its catalog does not declare. */
-export type Role = 'scheduled' | 'vehicles' | 'trip_updates' | 'alerts' | 'realtime';
+export type Role =
+  'scheduled' | 'vehicles' | 'trip_updates' | 'alerts' | 'realtime';
 
 export const STATES: State[] = ['up', 'partial', 'down', 'unknown'];
-export const ROLES: Role[] = ['scheduled', 'vehicles', 'trip_updates', 'alerts', 'realtime'];
-export const RT_ROLES: Role[] = ['vehicles', 'trip_updates', 'alerts', 'realtime'];
+export const ROLES: Role[] = [
+  'scheduled',
+  'vehicles',
+  'trip_updates',
+  'alerts',
+  'realtime',
+];
+export const RT_ROLES: Role[] = [
+  'vehicles',
+  'trip_updates',
+  'alerts',
+  'realtime',
+];
 
 /** Place keys shared by rows and feeds; absent rather than empty. */
 export interface Place {
@@ -182,7 +194,9 @@ async function fetchManifest(): Promise<Manifest> {
  * retry refetches rather than replaying the same rejection. Arguments only
  * reach the call that starts the load.
  */
-function sessionCached<A extends unknown[], T>(load: (...args: A) => Promise<T>): (...args: A) => Promise<T> {
+function sessionCached<A extends unknown[], T>(
+  load: (...args: A) => Promise<T>
+): (...args: A) => Promise<T> {
   let cached: Promise<T> | null = null;
   return (...args) =>
     (cached ??= load(...args).catch((err: unknown) => {
@@ -195,7 +209,10 @@ function sessionCached<A extends unknown[], T>(load: (...args: A) => Promise<T>)
 const loadManifest = sessionCached(fetchManifest);
 
 /** Fetch and parse one JSON body, reporting each chunk's size as it arrives. */
-async function fetchCounted<T>(url: string, onChunk: (bytes: number) => void): Promise<T> {
+async function fetchCounted<T>(
+  url: string,
+  onChunk: (bytes: number) => void
+): Promise<T> {
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`${url}: HTTP ${res.status} ${res.statusText}`.trim());
@@ -219,7 +236,10 @@ async function fetchCounted<T>(url: string, onChunk: (bytes: number) => void): P
 }
 
 /** Fetch the named artifacts in parallel, at the hashes the manifest names. */
-async function fetchArtifacts(names: string[], onProgress?: ProgressHandler): Promise<unknown[]> {
+async function fetchArtifacts(
+  names: string[],
+  onProgress?: ProgressHandler
+): Promise<unknown[]> {
   const manifest = await loadManifest();
 
   const entries = names.map((name) => {
@@ -234,7 +254,10 @@ async function fetchArtifacts(names: string[], onProgress?: ProgressHandler): Pr
   // whether or not the transfer was compressed. A body that runs past its
   // manifest size is not the object the manifest names (a stale cache, a proxy
   // rewriting it), and from then on the bar only counts.
-  let total: number | null = entries.reduce((sum, { entry }) => sum + entry.bytes, 0);
+  let total: number | null = entries.reduce(
+    (sum, { entry }) => sum + entry.bytes,
+    0
+  );
   let received = 0;
   const seen = new Map<string, number>();
   const counter = (name: string, expected: number) => (bytes: number) => {
@@ -250,7 +273,10 @@ async function fetchArtifacts(names: string[], onProgress?: ProgressHandler): Pr
 
   return Promise.all(
     entries.map(({ name, entry }) =>
-      fetchCounted<unknown>(`${CONFIG.DATA_BASE}/${name}?v=${entry.sha256.slice(0, 16)}`, counter(name, entry.bytes))
+      fetchCounted<unknown>(
+        `${CONFIG.DATA_BASE}/${name}?v=${entry.sha256.slice(0, 16)}`,
+        counter(name, entry.bytes)
+      )
     )
   );
 }
@@ -259,19 +285,32 @@ async function fetchArtifacts(names: string[], onProgress?: ProgressHandler): Pr
  * The searchable feeds and the summary. `onProgress` only hears about a fetch
  * this call started.
  */
-export const loadCore = sessionCached(async (onProgress?: ProgressHandler): Promise<CoreCatalogue> => {
-  const manifest = await loadManifest();
-  const [search, summary] = await fetchArtifacts(['search.json', 'summary.json'], onProgress);
-  return {
-    generatedAt: manifest.generated_at,
-    feeds: parseSearchDocument(search).map((feed) => ({ ...feed, country_code: feed.countryCode, members: [] })),
-    summary: summary as Summary,
-  };
-});
+export const loadCore = sessionCached(
+  async (onProgress?: ProgressHandler): Promise<CoreCatalogue> => {
+    const manifest = await loadManifest();
+    const [search, summary] = await fetchArtifacts(
+      ['search.json', 'summary.json'],
+      onProgress
+    );
+    return {
+      generatedAt: manifest.generated_at,
+      feeds: parseSearchDocument(search).map((feed) => ({
+        ...feed,
+        country_code: feed.countryCode,
+        members: [],
+      })),
+      summary: summary as Summary,
+    };
+  }
+);
 
 /** The full feeds, the catalog rows and their checks. */
 export const loadDetail = sessionCached(async (): Promise<DetailCatalogue> => {
-  const [feeds, sources, status] = await fetchArtifacts(['feeds.json', 'sources.json', 'status.json']);
+  const [feeds, sources, status] = await fetchArtifacts([
+    'feeds.json',
+    'sources.json',
+    'status.json',
+  ]);
   return {
     feeds: (feeds as { feeds: FullFeed[] }).feeds,
     sources: (sources as { sources: SourceRow[] }).sources,
@@ -280,7 +319,10 @@ export const loadDetail = sessionCached(async (): Promise<DetailCatalogue> => {
 });
 
 /** A row's state, from the status document when it has one. */
-export function stateOf(row: SourceRow, status: Record<string, StatusEntry>): RoleState {
+export function stateOf(
+  row: SourceRow,
+  status: Record<string, StatusEntry>
+): RoleState {
   return status[row.rowId]?.state ?? row.state ?? 'unknown';
 }
 
@@ -296,9 +338,15 @@ export function hasRealtime(feed: Feed): boolean {
 export function sortFeeds(feeds: Feed[]): Feed[] {
   const keyed = feeds.map((feed) => {
     const time = feed.lastModified ? Date.parse(feed.lastModified) : NaN;
-    return { feed, time: Number.isNaN(time) ? -Infinity : time, name: feed.name || feed.feedId };
+    return {
+      feed,
+      time: Number.isNaN(time) ? -Infinity : time,
+      name: feed.name || feed.feedId,
+    };
   });
-  keyed.sort((a, b) => (a.time === b.time ? a.name.localeCompare(b.name) : b.time - a.time));
+  keyed.sort((a, b) =>
+    a.time === b.time ? a.name.localeCompare(b.name) : b.time - a.time
+  );
   return keyed.map(({ feed }) => feed);
 }
 
@@ -341,7 +389,11 @@ export class CatalogueIndex {
         Object.assign(feed, full);
       }
     }
-    this.feedOfRow = new Map(this.feeds.flatMap((feed) => feed.members.map((member) => [member, feed] as const)));
+    this.feedOfRow = new Map(
+      this.feeds.flatMap((feed) =>
+        feed.members.map((member) => [member, feed] as const)
+      )
+    );
     this.rowById = new Map(data.sources.map((row) => [row.rowId, row]));
     this.status = data.status;
     this.detail = true;
@@ -362,6 +414,8 @@ export class CatalogueIndex {
 
   /** A feed's member rows, skipping any the sources document lacks. */
   membersOf(feed: Feed): SourceRow[] {
-    return feed.members.map((id) => this.rowById.get(id)).filter((row): row is SourceRow => row !== undefined);
+    return feed.members
+      .map((id) => this.rowById.get(id))
+      .filter((row): row is SourceRow => row !== undefined);
   }
 }

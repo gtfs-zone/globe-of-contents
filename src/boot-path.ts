@@ -4,7 +4,9 @@
  * relative URLs resolve against `/` and every later hash read sees the feed.
  */
 
-const match = /^\/feed\/(f-[0-9a-f]{10})(?:\/|$)/.exec(window.location.pathname);
+const match = /^\/feed\/(f-[0-9a-f]{10})(?:\/|$)/.exec(
+  window.location.pathname
+);
 if (match) {
   window.history.replaceState(null, '', `/#feed=${match[1]}`);
 }
