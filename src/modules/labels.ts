@@ -3,11 +3,11 @@
  * and the search box so the same feed never reads two different ways.
  */
 
-import { FEED_STATE_LABELS, ROLE_LABELS as FEED_ROLE_LABELS } from 'interlocking/gtfs/feed-catalog';
+import { FEED_STATE_LABELS, ROLE_LABELS as FEED_ROLE_LABELS } from 'gtfs-zone-web-common/gtfs/feed-catalog';
 import { CONFIG } from '../config';
 import type { Feed, FeedContent, Place, Role, RoleState, SourceRow, State, StatusEntry } from '../data/artifacts';
 
-export { placeLine as feedPlaceLine } from 'interlocking/gtfs/feed-catalog';
+export { placeLine as feedPlaceLine } from 'gtfs-zone-web-common/gtfs/feed-catalog';
 
 export const CATALOG_LABELS: Record<string, string> = {
   transitland: 'Transitland',
@@ -20,7 +20,7 @@ export const KIND_LABELS: Record<string, string> = {
   rt: 'Realtime',
 };
 
-// interlocking's words, so a feed reads the same in the editor and the viewer.
+// gtfs-zone-web-common's words, so a feed reads the same in the editor and the viewer.
 export const ROLE_LABELS: Record<Role, string> = FEED_ROLE_LABELS;
 export const STATE_LABELS: Record<State, string> = FEED_STATE_LABELS;
 

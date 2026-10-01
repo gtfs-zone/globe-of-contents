@@ -1,7 +1,7 @@
 /**
  * Focus changes and the hash.
  *
- * The focus half is interlocking's `FocusController`: map click, list link,
+ * The focus half is gtfs-zone-web-common's `FocusController`: map click, list link,
  * search pick, hash change and boot restore all converge on it. The hash's
  * other half is the filters, set with `setFilterParams`, which replaces the
  * hash in place so typing in the search box leaves no history entry per
@@ -9,11 +9,11 @@
  * just the page.
  */
 
-import type { BreadcrumbItem } from 'interlocking/ui/breadcrumb-trail';
-import type { FocusHooks } from 'interlocking/ui/focus-controller';
-import { FocusController } from 'interlocking/ui/focus-controller';
-import type { PageStateCodec } from 'interlocking/ui/page-state-manager';
-import { PageStateManager } from 'interlocking/ui/page-state-manager';
+import type { BreadcrumbItem } from 'gtfs-zone-web-common/ui/breadcrumb-trail';
+import type { FocusHooks } from 'gtfs-zone-web-common/ui/focus-controller';
+import { FocusController } from 'gtfs-zone-web-common/ui/focus-controller';
+import type { PageStateCodec } from 'gtfs-zone-web-common/ui/page-state-manager';
+import { PageStateManager } from 'gtfs-zone-web-common/ui/page-state-manager';
 import type { CatalogueIndex } from '../data/artifacts';
 import type { PageState } from '../types/page-state';
 import { isPageState, pageFromParams, pageToParams } from '../types/page-state';

@@ -3,7 +3,7 @@
  * a role, which geometry-car orders best first.
  */
 
-import { realtimeSlots } from 'interlocking/gtfs/feed-catalog';
+import { realtimeSlots } from 'gtfs-zone-web-common/gtfs/feed-catalog';
 import { CONFIG } from '../config';
 import type { Feed } from '../data/artifacts';
 import { hasRealtime } from '../data/artifacts';

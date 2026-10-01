@@ -1,10 +1,10 @@
 /**
  * The Guide's pages: what exist, their grouping, and their copy. Rendering
- * lives in interlocking's `ui/help-modal`.
+ * lives in gtfs-zone-web-common's `ui/help-modal`.
  */
 
-import { eyebrow, footnote, glyphList, lede, type HelpPageEntry } from 'interlocking/ui/help-modal';
-import { renderExternalLink } from 'interlocking/ui/about-links';
+import { eyebrow, footnote, glyphList, lede, type HelpPageEntry } from 'gtfs-zone-web-common/ui/help-modal';
+import { renderExternalLink } from 'gtfs-zone-web-common/ui/about-links';
 
 export type HelpGroup = 'Getting Started' | 'Reference';
 

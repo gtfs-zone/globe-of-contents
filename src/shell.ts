@@ -4,7 +4,7 @@
  * looks up an element id.
  */
 
-import { mountAppShell } from 'interlocking/ui/app-shell';
+import { mountAppShell } from 'gtfs-zone-web-common/ui/app-shell';
 
 const GENERATED_AT = '<span id="generated-at" class="text-xs opacity-60 hidden sm:inline"></span>';
 

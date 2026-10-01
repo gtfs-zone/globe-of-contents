@@ -18,7 +18,7 @@
  * Source pages.
  */
 
-import { parseSearchDocument } from 'interlocking/gtfs/feed-catalog';
+import { parseSearchDocument } from 'gtfs-zone-web-common/gtfs/feed-catalog';
 import { CONFIG } from '../config';
 
 export type Catalog = 'transitland' | 'mobilitydatabase' | 'gtfszone';

@@ -21,13 +21,13 @@ git config core.hooksPath .githooks   # once per clone; runs typecheck pre-commi
 
 ```
 src/boot-path.ts           rewrites a crawlable /feed/<id>/<slug> URL to #feed=<id> before anything reads the hash
-src/shell.ts               mounts interlocking's app shell and sets up its search box
+src/shell.ts               mounts gtfs-zone-web-common's app shell and sets up its search box
 src/config.ts              every magic number and URL, one frozen CONFIG
 src/data/artifacts.ts      artifact types (mirroring geometry-car's artifacts.py), the fetch, CatalogueIndex
                            (first paint is search.json; feeds.json, sources.json and status.json follow)
 src/types/page-state.ts    home | feed | source, and their hash codec
 src/modules/app-state.ts   FocusController: page half of the hash, filter half replaced in place
-src/modules/filters.ts     filter state, URL hash, localStorage, interlocking's FeedMatcher, near-place sort
+src/modules/filters.ts     filter state, URL hash, localStorage, gtfs-zone-web-common's FeedMatcher, near-place sort
 src/modules/pages.ts       the sidebar's Home, Feed and Source pages and their breadcrumbs
 src/modules/map-view.ts    MapLibre, clustered source, HTML cluster markers
 src/modules/help-pages.ts  the Guide's pages
@@ -60,7 +60,7 @@ src/modules/help-pages.ts  the Guide's pages
   clicks, search picks and breadcrumbs alike. The sidebar and the camera react
   to `onFocusChange`, not to each other.
 - **Shared wording and search.** Feed states, role labels, role chips and the
-  text matching come from interlocking's `gtfs/feed-catalog`, `gtfs/feed-badges`
+  text matching come from gtfs-zone-web-common's `gtfs/feed-catalog`, `gtfs/feed-badges`
   and `gtfs/feed-search`, so a feed reads and is found the same way in the
   editor and the viewer.
 - **State split:** filters (`q`, `status`, `rt`) go in Home's URL hash, and a
@@ -75,7 +75,7 @@ src/modules/help-pages.ts  the Guide's pages
   `pnpm build` and hand off.
 - Never include `Co-Authored-By: Claude ...` trailers in commit messages.
 
-## Shared modules (`interlocking`)
+## Shared modules (`gtfs-zone-web-common`)
 
 Pinned git dependency shipping raw TypeScript. Adding it takes four edits and
 missing any one fails in a different place: the `tsconfig.json` `paths` entry,
@@ -96,7 +96,7 @@ commits its digest into `gtfs-zone-infra/sites`.
 | Repo | Description | URL |
 |---|---|---|
 | geometry-car | Dagster pipeline publishing the artifacts this app reads | https://git.kcfam.us/gtfs.zone/geometry-car |
-| interlocking | Shared browser-side library | https://git.kcfam.us/gtfs.zone/interlocking |
+| gtfs-zone-web-common | Shared browser-side library | https://github.com/gtfs-zone/gtfs-zone-web-common |
 | coloring-book | Schedule editor, edit.gtfs.zone | https://git.kcfam.us/gtfs.zone/coloring-book |
 | test-track | Realtime visualizer, viz.rt.gtfs.zone | https://git.kcfam.us/gtfs.zone/test-track |
 | deploy-gtfs-rt | k3s + ArgoCD deploy repo | https://git.kcfam.us/gtfs.zone/deploy-gtfs-rt |

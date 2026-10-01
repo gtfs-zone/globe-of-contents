@@ -1,14 +1,14 @@
 /**
  * The search dropdown's entries: one per logical feed, matched on
- * interlocking's feed haystack, so the dropdown, the list's live filter and
+ * gtfs-zone-web-common's feed haystack, so the dropdown, the list's live filter and
  * the other apps' pickers agree on what a query finds.
  */
 
-import { feedHaystack } from 'interlocking/gtfs/feed-search';
-import type { PlacePayload } from 'interlocking/map/place-search';
-import { dotMarker } from 'interlocking/ui/search-controller';
-import type { SearchEntry } from 'interlocking/ui/search-controller';
-import { resolveThemeColor } from 'interlocking/util/theme-color';
+import { feedHaystack } from 'gtfs-zone-web-common/gtfs/feed-search';
+import type { PlacePayload } from 'gtfs-zone-web-common/map/place-search';
+import { dotMarker } from 'gtfs-zone-web-common/ui/search-controller';
+import type { SearchEntry } from 'gtfs-zone-web-common/ui/search-controller';
+import { resolveThemeColor } from 'gtfs-zone-web-common/util/theme-color';
 import { CONFIG } from '../config';
 import type { Feed, State } from '../data/artifacts';
 import { hasRealtime } from '../data/artifacts';

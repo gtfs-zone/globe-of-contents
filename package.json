@@ -1,5 +1,5 @@
 {
-  "name": "list.gtfs.zone",
+  "name": "gtfs-zone-feed-list",
   "version": "0.5.1",
   "description": "A list and a world map of every public GTFS feed, and whether it answers",
   "main": "src/index.html",
@@ -31,7 +31,7 @@
     "@leeoniya/ufuzzy": "^1.0.19",
     "@tailwindcss/postcss": "^4.3.3",
     "daisyui": "^5.7.46",
-    "interlocking": "github:gtfs-zone/interlocking#v4.0.0",
+    "gtfs-zone-web-common": "github:gtfs-zone/gtfs-zone-web-common#v5.0.1",
     "maplibre-gl": "^6.11.2"
   }
 }

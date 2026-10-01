@@ -5,11 +5,11 @@
  * of states) and `rt`. The same filters are also kept per device in
  * localStorage, and restored only when a visit arrives with no filters in the
  * hash, so a filtered link always wins over whatever the recipient last looked
- * at. The text matching is interlocking's, so a query finds the same feeds
+ * at. The text matching is gtfs-zone-web-common's, so a query finds the same feeds
  * here as in the editor's and the viewer's pickers.
  */
 
-import { FeedMatcher } from 'interlocking/gtfs/feed-search';
+import { FeedMatcher } from 'gtfs-zone-web-common/gtfs/feed-search';
 import { CONFIG } from '../config';
 import type { Feed, State } from '../data/artifacts';
 import { STATES, hasRealtime } from '../data/artifacts';

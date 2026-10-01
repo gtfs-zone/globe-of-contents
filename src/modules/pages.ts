@@ -8,10 +8,10 @@
  * delegates both.
  */
 
-import { feedStateBadge, roleChip, roleChips } from 'interlocking/gtfs/feed-badges';
-import type { BreadcrumbItem } from 'interlocking/ui/breadcrumb-trail';
-import { TOOLTIP_TRIGGER_CLASS, renderTooltipTrigger, tooltipContentAttr } from 'interlocking/ui/field-label';
-import { escapeHtml } from 'interlocking/util/escape-html';
+import { feedStateBadge, roleChip, roleChips } from 'gtfs-zone-web-common/gtfs/feed-badges';
+import type { BreadcrumbItem } from 'gtfs-zone-web-common/ui/breadcrumb-trail';
+import { TOOLTIP_TRIGGER_CLASS, renderTooltipTrigger, tooltipContentAttr } from 'gtfs-zone-web-common/ui/field-label';
+import { escapeHtml } from 'gtfs-zone-web-common/util/escape-html';
 import { CONFIG } from '../config';
 import type { CatalogueIndex, Feed, Role, RoleState, SourceRow, State } from '../data/artifacts';
 import { ROLES, STATES, stateOf } from '../data/artifacts';
