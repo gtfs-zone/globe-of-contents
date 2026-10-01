@@ -1,0 +1,46 @@
+publiccodeYmlVersion: "0.4"
+
+name: GTFS.zone Feed List
+url: "https://github.com/gtfs-zone/gtfs-zone-feed-list"
+landingURL: "https://list.gtfs.zone"
+
+platforms:
+  - web
+
+categories:
+  - data-visualization
+  - geographic-information-systems
+
+developmentStatus: beta
+
+softwareType: "standalone/web"
+
+description:
+  en:
+    shortDescription: >
+      A list and a world map of every public GTFS and GTFS Realtime feed, and whether each one still answers.
+    longDescription: >
+      GTFS.zone Feed List shows every public GTFS Schedule and GTFS Realtime
+      feed known to the Transitland Atlas and the Mobility Database, as a
+      searchable list and a clustered world map, with whether each feed
+      endpoint still answers. It is a static single-page app with no backend
+      of its own: everything it shows comes from the daily artifacts the
+      gtfs.zone feed catalog publishes to data.gtfs.zone.
+    features:
+      - Searchable list of public GTFS and GTFS Realtime feeds
+      - Clustered world map with up, down and inaccessible shares
+      - Daily reachability status for every feed endpoint
+
+legal:
+  license: AGPL-3.0-or-later
+
+maintenance:
+  type: community
+  contacts:
+    - name: Max Katz-Christy
+      email: maxkatzchristy@gmail.com
+
+localisation:
+  localisationReady: false
+  availableLanguages:
+    - en
