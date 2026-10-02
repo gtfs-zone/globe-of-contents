@@ -27,6 +27,7 @@ export const NAVBAR_ACTIONS: NavbarAction[] = [
     label: t('shell.guide'),
     icon: renderNavIcon('guide'),
   },
+  { kind: 'locale', id: 'locale-toggle' },
 ];
 
 /** Icons the mobile dock shares with the navbar, by element id. */
