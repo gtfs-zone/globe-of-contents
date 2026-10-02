@@ -11,6 +11,7 @@ import {
   type HelpPageEntry,
 } from 'gtfs-zone-web-common/ui/help-modal';
 import { renderExternalLink } from 'gtfs-zone-web-common/ui/about-links';
+import { t } from '../i18n/messages';
 
 export type HelpGroup = 'Getting Started' | 'Reference';
 
@@ -55,146 +56,157 @@ export function setHelpVersion(version: string): void {
 
 const overviewPage: HelpPage = {
   id: 'overview',
-  label: 'Overview',
+  label: t('help.overview.label'),
   group: 'Getting Started',
-  title: 'Every public GTFS feed, and whether it answers',
+  title: t('help.overview.title'),
   render: () =>
     [
       eyebrow('list.gtfs.zone'),
-      lede(
-        'Every public GTFS schedule and GTFS Realtime feed in the Transitland Atlas, the Mobility Database and rt.gtfs.zone, merged into one entry per transit system and checked every day.'
-      ),
+      lede(t('help.overview.lede')),
       glyphList([
         {
           icon: ICON_SEARCH,
-          term: 'Search',
-          description:
-            'Typing in the search box narrows the list and the map as you type, and offers the best matches in a dropdown: by name, place, or the host a feed is served from. Places and points of interest are offered under the matches; picking one moves the map there and lists the nearest feeds first. The counts at the top of the list filter it by state, and the switch under them to feeds with realtime.',
+          term: t('help.overview.search'),
+          description: t('help.overview.searchText'),
         },
         {
           icon: ICON_MAP,
-          term: 'Browse',
-          description:
-            'The list puts the most recently modified schedules first, or the best matches first while searching. Pick a feed from the list, the map or the dropdown to see its schedule and realtime URLs, and every catalog entry it was built from.',
+          term: t('help.overview.browse'),
+          description: t('help.overview.browseText'),
         },
         {
           icon: ICON_OPEN,
-          term: 'Open it',
-          description:
-            'A feed with a schedule opens in the editor; one with a schedule and realtime also opens in the visualizer.',
+          term: t('help.overview.open'),
+          description: t('help.overview.openText'),
         },
       ]),
-      appVersion ? footnote(`Version ${appVersion}`) : '',
+      appVersion
+        ? footnote(t('help.overview.version', { version: appVersion }))
+        : '',
     ].join(''),
 };
 
 const statesPage: HelpPage = {
   id: 'states',
-  label: 'Up, partial, down, inaccessible',
+  label: t('help.states.label'),
   group: 'Reference',
-  title: 'What up, partial, down and inaccessible mean',
+  title: t('help.states.title'),
   render: () =>
     [
-      lede(
-        'Once a day every URL is asked for its headers only: a HEAD request, or a one-byte ranged GET when the server refuses HEAD. No feed is downloaded.'
-      ),
-      lede(
-        'A URL is up when it answered with a success, possibly after redirects, and down when the check failed: DNS, TLS, a timeout, a refused connection or an HTTP error. A URL that needs an API key is never checked.'
-      ),
-      lede(
-        'A feed has roles: its schedule, and its realtime trip updates, vehicle positions and service alerts. A role is up when any of its URLs answered, so one catalog listing a mistyped URL does not take down a feed whose other URL works. The feed itself is:'
-      ),
+      lede(t('help.states.check')),
+      lede(t('help.states.url')),
+      lede(t('help.states.roles')),
       glyphList([
         {
           icon: ICON_UP,
-          term: 'Up',
-          description: 'Its schedule and every realtime role answered.',
+          term: t('help.states.up'),
+          description: t('help.states.upText'),
         },
         {
           icon: ICON_PARTIAL,
-          term: 'Partial',
-          description:
-            'Its schedule answered, but at least one realtime role did not. Without a checked schedule, some realtime roles answered and some did not.',
+          term: t('help.states.partial'),
+          description: t('help.states.partialText'),
         },
         {
           icon: ICON_DOWN,
-          term: 'Down',
-          description:
-            'Its schedule did not answer. "Down since" is when it stopped answering. Without a checked schedule, none of its realtime roles answered.',
+          term: t('help.states.down'),
+          description: t('help.states.downText'),
         },
         {
           icon: ICON_UNKNOWN,
-          term: 'Inaccessible',
-          description:
-            'Nothing it lists could be checked: every URL needs an API key, or none has been checked yet.',
+          term: t('help.states.unknown'),
+          description: t('help.states.unknownText'),
         },
       ]),
-      lede(
-        'The chips on each feed are its realtime roles: TU for trip updates, VP for vehicle positions, SA for service alerts, and RT for a realtime URL whose catalog does not say which of the three it serves. Each is green when it answered the last check, red when it did not, and grey when it was not checked.'
-      ),
+      lede(t('help.states.chips')),
     ].join(''),
 };
 
 const mergingPage: HelpPage = {
   id: 'merging',
-  label: 'How feeds are merged',
+  label: t('help.merging.label'),
   group: 'Reference',
-  title: 'How catalog entries become one feed',
+  title: t('help.merging.title'),
   render: () =>
     [
-      lede(
-        'The catalogs list the same transit system separately, and often split its schedule and realtime into separate entries. Here they are merged into one feed per system, and nothing is dropped: each feed links to every catalog entry it came from.'
-      ),
+      lede(t('help.merging.lede')),
       `<ul class="list-disc list-inside space-y-1 text-sm">
-        <li>Entries naming the same URL, once normalized, are the same feed.</li>
-        <li>Mobility Database cross-references between a schedule and its realtime join them.</li>
-        <li>Realtime URLs on the same host and path that differ only in a last vehicles, trips or alerts segment are one feed.</li>
+        <li>${t('help.merging.sameUrl')}</li>
+        <li>${t('help.merging.crossRef')}</li>
+        <li>${t('help.merging.realtime')}</li>
       </ul>`,
-      lede(
-        'There is no fuzzy matching on names, so two entries for the same system with different URLs and no cross-reference stay separate. A feed keeps its id across days as long as most of its entries stay together.'
-      ),
-      lede(
-        "The name is the Transitland operator's, else the Mobility Database provider's (its feed name becomes the subtitle), else the single agency the schedule names, else any catalog entry's. Every other name is kept, and search finds the feed by any of them."
-      ),
+      lede(t('help.merging.noFuzzy')),
+      lede(t('help.merging.names')),
     ].join(''),
 };
 
 const unplacedPage: HelpPage = {
   id: 'unplaced',
-  label: 'Unplaced feeds',
+  label: t('help.unplaced.label'),
   group: 'Reference',
-  title: 'Why some feeds are not on the map',
+  title: t('help.unplaced.title'),
   render: () =>
     [
-      lede(
-        'Coordinates come from the Mobility Database, which records a location and a bounding box for most of its feeds. Transitland Atlas entries carry no place at all, so a Transitland-only feed has nowhere to be drawn.'
-      ),
-      lede(
-        'A feed that merges a Transitland entry with a Mobility Database one takes the Mobility Database place. The rest are listed but not mapped, and the count of them is always shown next to the map rather than quietly left out.'
-      ),
+      lede(t('help.unplaced.coordinates')),
+      lede(t('help.unplaced.merged')),
     ].join(''),
 };
 
 const sourcesPage: HelpPage = {
   id: 'sources',
-  label: 'Where the data comes from',
+  label: t('help.sources.label'),
   group: 'Reference',
-  title: 'Where the data comes from',
+  title: t('help.sources.title'),
   render: () =>
     [
-      lede('Four catalogs, refreshed daily by gtfs-zone-feed-catalog:'),
+      lede(t('help.sources.lede')),
       `<ul class="list-disc list-inside space-y-1 text-sm">
-        <li>${renderExternalLink('https://github.com/transitland/transitland-atlas', 'Transitland Atlas')}: the open DMFR corpus, ${renderExternalLink('https://creativecommons.org/licenses/by/4.0/', 'CC BY 4.0')}</li>
-        <li>${renderExternalLink('https://mobilitydatabase.org', 'Mobility Database')}: MobilityData's catalog, with places, ${renderExternalLink('https://creativecommons.org/publicdomain/zero/1.0/', 'CC0')}</li>
-        <li>${renderExternalLink('https://rt.gtfs.zone/feeds', 'rt.gtfs.zone')}: the realtime feeds gtfs.zone serves itself, such as Amtrak</li>
-        <li>${renderExternalLink('https://data.transportation.gov/d/2u7n-ub22', 'National Transit Database')}: the GTFS weblinks US transit agencies report to the FTA, public domain</li>
+        <li>${t('help.sources.transitland', {
+          link: renderExternalLink(
+            'https://github.com/transitland/transitland-atlas',
+            'Transitland Atlas'
+          ),
+          license: renderExternalLink(
+            'https://creativecommons.org/licenses/by/4.0/',
+            'CC BY 4.0'
+          ),
+        })}</li>
+        <li>${t('help.sources.mobilitydatabase', {
+          link: renderExternalLink(
+            'https://mobilitydatabase.org',
+            'Mobility Database'
+          ),
+          license: renderExternalLink(
+            'https://creativecommons.org/publicdomain/zero/1.0/',
+            'CC0'
+          ),
+        })}</li>
+        <li>${t('help.sources.gtfszone', {
+          link: renderExternalLink(
+            'https://rt.gtfs.zone/feeds',
+            'rt.gtfs.zone'
+          ),
+        })}</li>
+        <li>${t('help.sources.ntd', {
+          link: renderExternalLink(
+            'https://data.transportation.gov/d/2u7n-ub22',
+            'National Transit Database'
+          ),
+        })}</li>
       </ul>`,
       lede(
-        `Everything this page shows is published as JSON at ${renderExternalLink('https://data.gtfs.zone/manifest.json', 'data.gtfs.zone')}: <code>search.json</code> for the merged feeds in brief, <code>feeds.json</code> for them in full, <code>sources.json</code> for the catalog entries and <code>status.json</code> for each check.`
+        t('help.sources.json', {
+          link: renderExternalLink(
+            'https://data.gtfs.zone/manifest.json',
+            'data.gtfs.zone'
+          ),
+          search: '<code>search.json</code>',
+          feeds: '<code>feeds.json</code>',
+          sources: '<code>sources.json</code>',
+          status: '<code>status.json</code>',
+        })
       ),
-      lede(
-        "The catalogs list where feeds are; the feeds themselves belong to their publishers. Each feed's page links the license its catalog records, and that license, not this site's, is what covers the data."
-      ),
+      lede(t('help.sources.licenses')),
     ].join(''),
 };
 

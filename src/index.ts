@@ -38,6 +38,7 @@ import type {
   State,
 } from './data/artifacts';
 import { CatalogueIndex, loadCore, loadDetail } from './data/artifacts';
+import { t } from './i18n/messages';
 import { AppState } from './modules/app-state';
 import type { Filters, Near } from './modules/filters';
 import {
@@ -157,7 +158,7 @@ const panel = new PanelHost<PageState>(panelContent, {
 panel.initialize();
 
 // Not read from document.title: on a /feed/ path nginx serves the feed's title.
-const DEFAULT_TITLE = 'list.gtfs.zone - Every public GTFS feed';
+const DEFAULT_TITLE = t('app.title');
 
 const appState = new AppState({
   onStateChange: () => {},
@@ -280,17 +281,16 @@ function start(data: CoreCatalogue): void {
   searchEntries = new SearchEntries(index.feeds);
   appState.setIndex(index, () => detailSettled);
 
-  document.getElementById('generated-at')!.textContent =
-    `Checked ${formatDate(data.generatedAt)}`;
+  document.getElementById('generated-at')!.textContent = t('shell.checked', {
+    date: formatDate(data.generatedAt),
+  });
 
   filtered = feedFilter.apply(filters, near);
   map.setFeeds(filtered);
 
   // A Source link is adopted as-is; `onDetail` checks it once the rows are in.
   if (pending.type === 'feed' && !validateState(index, pending)) {
-    notify.warning(
-      `Nothing in this catalogue matches the linked ${pending.type}`
-    );
+    notify.warning(t('boot.noFeed'));
     appState.adopt({ type: 'home' });
   } else {
     appState.adopt(pending);
@@ -311,7 +311,7 @@ function onDetail(data: DetailCatalogue): void {
   }
   if (focus.type === 'source') {
     if (!index!.row(focus.source)) {
-      notify.warning('Nothing in this catalogue matches the linked source');
+      notify.warning(t('boot.noSource'));
       appState.adopt({ type: 'home' });
       appState.replaceHash();
       return;
@@ -332,7 +332,7 @@ function startDetail(): void {
   detailSettled = loadDetail().then(onDetail, (err: unknown) => {
     const message = err instanceof Error ? err.message : String(err);
     detailFailed = true;
-    notify.warning(`Could not load the catalog sources: ${message}`);
+    notify.warning(t('boot.detailFailed', { message }));
     refreshPanel();
   });
 }
@@ -348,14 +348,17 @@ function reportProgress(received: number, total: number | null): void {
     feedProgressIndicator.updateProgress(
       LOAD_OP,
       Math.min(100, (received / total) * 100),
-      `Loading the catalogue (${formatBytes(received)} of ${formatBytes(total)})`
+      t('boot.loadingOf', {
+        received: formatBytes(received),
+        total: formatBytes(total),
+      })
     );
     return;
   }
   feedProgressIndicator.updateProgress(
     LOAD_OP,
     0,
-    `Loading the catalogue (${formatBytes(received)})`
+    t('boot.loadingBytes', { received: formatBytes(received) })
   );
   document
     .querySelector('#global-loading-indicator .loading-progress')
@@ -363,17 +366,17 @@ function reportProgress(received: number, total: number | null): void {
 }
 
 function boot(): void {
-  feedProgressIndicator.startLoading(LOAD_OP, 'Loading the catalogue');
+  feedProgressIndicator.startLoading(LOAD_OP, t('shell.loading'));
   loadCore(reportProgress)
     .then(start)
     .catch((err: unknown) => {
       const message = err instanceof Error ? err.message : String(err);
-      notify.error(`Could not load the catalogue: ${message}`);
+      notify.error(t('boot.failed', { message }));
       panelContent.innerHTML = `
         <div class="text-center py-8 flex flex-col items-center gap-3">
-          <p class="text-sm text-error">The catalogue did not load.</p>
+          <p class="text-sm text-error">${t('boot.failedPanel')}</p>
           <p class="text-xs opacity-60 max-w-xs">${escapeHtml(message)}</p>
-          <button id="retry-load" class="btn btn-sm">Retry</button>
+          <button id="retry-load" class="btn btn-sm">${t('boot.retry')}</button>
         </div>`;
       document.getElementById('retry-load')!.addEventListener('click', boot);
     })

@@ -39,6 +39,7 @@ import {
 import { escapeHtml } from 'gtfs-zone-web-common/util/escape-html';
 import { CONFIG } from '../config';
 import type { Feed, Place, State } from '../data/artifacts';
+import { t } from '../i18n/messages';
 import { STATE_LABELS } from './labels';
 import { readStored, writeStored } from './storage';
 
@@ -449,7 +450,13 @@ export class GlobeMap {
       `${this.colors.partial} ${upEnd}deg ${partialEnd}deg, ` +
       `${this.colors.down} ${partialEnd}deg ${downEnd}deg, ` +
       `${this.colors.unknown} ${downEnd}deg 360deg)`;
-    el.title = `${total} feeds: ${up} up, ${partial} partial, ${down} down, ${total - up - partial - down} inaccessible`;
+    el.title = t('map.cluster', {
+      total,
+      up,
+      partial,
+      down,
+      unknown: total - up - partial - down,
+    });
     el.innerHTML = `<span>${abbreviate(total)}</span>`;
     el.addEventListener('click', (event) => {
       event.stopPropagation();

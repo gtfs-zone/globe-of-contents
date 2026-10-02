@@ -5,6 +5,7 @@ import {
   type NavIconName,
 } from 'gtfs-zone-web-common/ui/nav-icons';
 import type { NavbarAction } from 'gtfs-zone-web-common/ui/navbar-actions';
+import { t } from '../i18n/messages';
 
 /**
  * This app's navbar action row and dock artwork. Element ids are the contract
@@ -14,7 +15,7 @@ export const NAVBAR_ACTIONS: NavbarAction[] = [
   {
     kind: 'toggle',
     id: 'theme-toggle',
-    label: 'Toggle theme',
+    label: t('nav.theme'),
     iconOn: renderSunIcon('swap-on h-5 w-5'),
     iconOff: renderMoonIcon('swap-off h-5 w-5'),
     inputClass: 'theme-controller',
@@ -23,7 +24,7 @@ export const NAVBAR_ACTIONS: NavbarAction[] = [
   {
     kind: 'icon',
     id: 'help-btn',
-    label: 'Guide',
+    label: t('shell.guide'),
     icon: renderNavIcon('guide'),
   },
 ];

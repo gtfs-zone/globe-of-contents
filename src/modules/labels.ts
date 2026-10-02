@@ -7,6 +7,10 @@ import {
   FEED_STATE_LABELS,
   ROLE_LABELS as FEED_ROLE_LABELS,
 } from 'gtfs-zone-web-common/gtfs/feed-catalog';
+import {
+  formatDate as fmtDate,
+  formatNumber,
+} from 'gtfs-zone-web-common/i18n/fmt';
 import { CONFIG } from '../config';
 import type {
   Feed,
@@ -18,6 +22,7 @@ import type {
   State,
   StatusEntry,
 } from '../data/artifacts';
+import { t } from '../i18n/messages';
 
 export { placeLine as feedPlaceLine } from 'gtfs-zone-web-common/gtfs/feed-catalog';
 
@@ -29,8 +34,8 @@ export const CATALOG_LABELS: Record<string, string> = {
 };
 
 export const KIND_LABELS: Record<string, string> = {
-  static: 'Schedule',
-  rt: 'Realtime',
+  static: t('kind.static'),
+  rt: t('kind.rt'),
 };
 
 // gtfs-zone-web-common's words, so a feed reads the same in the editor and the viewer.
@@ -45,21 +50,21 @@ export const STATE_BADGE: Record<State, string> = {
 };
 
 export const CONTENT_LABELS: Record<string, string> = {
-  ok: 'Valid GTFS zip',
-  not_zip: 'Not a zip',
-  missing_files: 'Missing GTFS files',
-  parse_error: 'Unreadable zip',
-  http_error: 'Download failed',
-  timeout: 'Download timed out',
-  memory: 'Too large to process',
-  error: 'Processing failed',
+  ok: t('content.ok'),
+  not_zip: t('content.not_zip'),
+  missing_files: t('content.missing_files'),
+  parse_error: t('content.parse_error'),
+  http_error: t('content.http_error'),
+  timeout: t('content.timeout'),
+  memory: t('content.memory'),
+  error: t('content.error'),
 };
 
 const SNIFF_LABELS: Record<string, string> = {
-  html: 'an HTML page',
-  json: 'JSON',
-  xml: 'XML',
-  empty: 'an empty response',
+  html: t('sniff.html'),
+  json: t('sniff.json'),
+  xml: t('sniff.xml'),
+  empty: t('sniff.empty'),
 };
 
 /** The last download's outcome, with what came back when it was not a zip. */
@@ -72,51 +77,41 @@ export function contentLine(content: FeedContent): string {
   return sniffed ? `${label}: ${sniffed}` : label;
 }
 
-/** Hover text for the Feed and Source pages' field labels. */
-export const FIELD_HINTS: Record<string, string> = {
-  Place:
-    'Where the catalog places this feed. Only the Mobility Database carries coordinates.',
-  'Also known as':
-    "Other names for this feed: its catalog entries', its operators' and the agencies in its schedule.",
-  'Schedule size':
-    "The schedule zip's size, from the Content-Length header of the last check.",
-  'Last modified': "The schedule's Last-Modified header from the last check.",
-  'Schedule contents':
-    'What the last download of the schedule held, from sites.gtfs.zone, which builds a timetable site from it. Only checked for feeds it builds.',
-  Service:
-    'The first and last service day in the schedule, from its calendars.',
-  Publisher: "The publisher named in the schedule's feed_info.txt.",
-  Version: "The version named in the schedule's feed_info.txt.",
-  Contents: 'Routes, stops and trips in the schedule.',
-  'Feed id': "This merged feed's id on list.gtfs.zone.",
-  Operator: 'The agency or organisation the catalog says runs this feed.',
-  'Catalog id':
-    "This entry's id in its catalog; links to the catalog's own page for it.",
-  From: 'Where the catalog itself got this entry.',
-  'Catalog status':
-    "The catalog's own lifecycle for this entry: active, deprecated, inactive and so on.",
-  License: 'The license the catalog lists for this feed.',
-  'Same endpoint as': 'Entries in other catalogs pointing at the same URL.',
-  'Redirects to':
-    'Where the URL ended up after following redirects on the last check.',
-  State:
-    'Up: answered on the last check. Down: failed it. Inaccessible: needs a key or was not checked. Click for the guide.',
-  'HTTP status': 'The status code of the last check.',
-  Error: 'Why the last check failed.',
-  Latency: 'How long the last check took to answer.',
-  'Failed checks in a row': 'Consecutive daily checks that failed.',
-  'Down since': 'When the URL stopped answering.',
-  'In this state since': 'When the current state was first seen.',
-  Access: 'URLs that need an API key are never checked.',
-};
+/** A Feed or Source page field; its label and hover text are `field.*` and `hint.*`. */
+export type FieldName =
+  | 'place'
+  | 'altNames'
+  | 'scheduleSize'
+  | 'lastModified'
+  | 'scheduleContents'
+  | 'service'
+  | 'publisher'
+  | 'version'
+  | 'contents'
+  | 'feedId'
+  | 'operator'
+  | 'catalogId'
+  | 'from'
+  | 'catalogStatus'
+  | 'license'
+  | 'sameEndpoint'
+  | 'redirectsTo'
+  | 'state'
+  | 'httpStatus'
+  | 'error'
+  | 'latency'
+  | 'failures'
+  | 'downSince'
+  | 'stateSince'
+  | 'access';
 
 const ERROR_LABELS: Record<string, string> = {
-  dns: 'DNS lookup failed',
-  tls: 'TLS error',
-  timeout: 'timed out',
-  refused: 'connection refused',
-  http_4xx: 'client error',
-  http_5xx: 'server error',
+  dns: t('error.dns'),
+  tls: t('error.tls'),
+  timeout: t('error.timeout'),
+  refused: t('error.refused'),
+  http_4xx: t('error.http_4xx'),
+  http_5xx: t('error.http_5xx'),
 };
 
 export function formatDate(iso: string | undefined): string {
@@ -126,29 +121,35 @@ export function formatDate(iso: string | undefined): string {
   const date = new Date(iso);
   return Number.isNaN(date.getTime())
     ? iso
-    : date.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
+    : fmtDate(date, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 export function formatCount(n: number): string {
-  return n.toLocaleString();
+  return formatNumber(n);
+}
+
+export function formatMs(ms: number): string {
+  return formatNumber(ms, { style: 'unit', unit: 'millisecond' });
 }
 
 export function formatBytes(n: number): string {
   if (n < 1024) {
-    return `${n} B`;
+    return t('unit.bytes', { n });
   }
-  const units = ['KB', 'MB', 'GB'];
+  const units = ['kilobyte', 'megabyte', 'gigabyte'];
   let value = n / 1024;
   let unit = 0;
   while (value >= 1024 && unit < units.length - 1) {
     value /= 1024;
     unit += 1;
   }
-  return `${value.toFixed(value < 10 ? 1 : 0)} ${units[unit]}`;
+  const digits = value < 10 ? 1 : 0;
+  return formatNumber(value, {
+    style: 'unit',
+    unit: units[unit],
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
 }
 
 /** Why a row reads the way it does, in a few words. */
@@ -158,10 +159,10 @@ export function statusLine(
   entry: StatusEntry | undefined
 ): string {
   if (state === 'unknown') {
-    return row.auth ? 'needs an API key' : '';
+    return row.auth ? t('status.needsKey') : '';
   }
   if (state === 'up') {
-    return entry?.latency_ms !== undefined ? `${entry.latency_ms} ms` : '';
+    return entry?.latency_ms !== undefined ? formatMs(entry.latency_ms) : '';
   }
   const parts: string[] = [];
   if (entry?.error) {
@@ -172,7 +173,7 @@ export function statusLine(
   }
   // `since` on a down row is when it went down; it has not answered since then.
   if (entry?.since) {
-    parts.push(`down since ${formatDate(entry.since)}`);
+    parts.push(t('status.downSince', { date: formatDate(entry.since) }));
   }
   return parts.join(', ');
 }
@@ -181,16 +182,16 @@ export function statusLine(
 export function feedStatusLine(feed: Feed): string {
   if (feed.state === 'down') {
     return feed.since
-      ? `down since ${formatDate(feed.since)}`
-      : 'not answering';
+      ? t('status.downSince', { date: formatDate(feed.since) })
+      : t('status.notAnswering');
   }
   if (feed.state === 'partial') {
     return feed.since
-      ? `partial since ${formatDate(feed.since)}`
-      : 'some realtime is not answering';
+      ? t('status.partialSince', { date: formatDate(feed.since) })
+      : t('status.someRealtime');
   }
   if (feed.state === 'unknown') {
-    return feed.auth?.length ? 'needs an API key' : '';
+    return feed.auth?.length ? t('status.needsKey') : '';
   }
   return '';
 }
